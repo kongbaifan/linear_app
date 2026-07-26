@@ -2090,6 +2090,142 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
   font-size: 10.5px;
   font-weight: 600;
 }
+
+.spinner {
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--yellow);
+  display: inline-block;
+  animation: spin .8s linear infinite;
+  border-radius: 50%;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.agent-tasks {
+  overflow-y: auto;
+  flex: 1;
+  padding-bottom: 32px;
+}
+
+.agents-empty {
+  text-align: center;
+  color: var(--text-3);
+  padding: 48px 24px;
+}
+
+.agent-task {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.agent-task-row {
+  display: flex;
+  text-align: left;
+  align-items:  center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+}
+
+.agent-task-row:hover {
+  background: var(--bg-hover);
+}
+
+.agent-task-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items:  center;
+  gap: 7px;
+  width: 108px;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.agent-task-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.agent-task-time {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.agent-task-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 16px 12px 140px;
+}
+
+.agent-task-steps .agent-worked-step {
+  animation: fade-in .2s ease;
+}
+
+.agent-worked-step.pulse {
+  animation: pulse-dim 1.2s ease-in-out infinite;
+}
+
+.agent-task-summary {
+  color: var(--text-2);
+  max-width: 720px;
+  padding: 0 16px 14px 140px;
+  font-size: 12.5px;
+}
+
+.delegate-btn {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.delegate-btn.working {
+  color: var(--text-2);
+}
+
+.delegate-btn.review {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.settings-label {
+  display: block;
+  color: var(--text-2);
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.settings-input {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text-1);
+  outline: none;
+  border-radius: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.settings-input:focus {
+  border-color: var(--accent);
+}
+
+.settings-hint {
+  color: var(--text-3);
+  margin-top: 5px;
+  font-size: 11.5px;
+}
 </style></head><body><div id="root"></div><script type="module">var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
@@ -19207,11 +19343,11 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
 });
 
 // src/main.tsx
-var import_react12 = __toESM(require_react(), 1);
+var import_react15 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
 // src/App.tsx
-var import_react11 = __toESM(require_react(), 1);
+var import_react14 = __toESM(require_react(), 1);
 
 // src/i18n.tsx
 var import_react = __toESM(require_react(), 1);
@@ -19300,7 +19436,23 @@ var en = {
   "modal.create": "Create issue",
   "agent.workedFor": "Worked for",
   "agent.inputPlaceholder": "Tell Linear what to do next…",
-  "agent.open": "Open Linear agent"
+  "agent.open": "Open Linear agent",
+  "agents.title": "Agent tasks",
+  "agents.empty": "No agent tasks yet — open an issue and delegate it to the agent.",
+  "agents.status.queued": "Queued",
+  "agents.status.working": "Working",
+  "agents.status.needsReview": "Needs review",
+  "agents.status.done": "Done",
+  "agents.status.failed": "Failed",
+  "agents.review": "Review diff",
+  "agents.settings": "Agent settings",
+  "agents.apiKey": "Anthropic API key",
+  "agents.apiKeyHint": "Stored only in your browser. Leave empty to use the built-in simulator.",
+  "agents.model": "Model",
+  "agents.save": "Save",
+  "agents.delegate": "Delegate to Agent",
+  "agents.working": "Agent working…",
+  "palette.goAgents": "Go to Agent tasks"
 };
 var zh = {
   "nav.inbox": "收件箱",
@@ -19386,7 +19538,23 @@ var zh = {
   "modal.create": "创建事项",
   "agent.workedFor": "已工作",
   "agent.inputPlaceholder": "告诉 Linear 接下来做什么…",
-  "agent.open": "打开 Linear agent"
+  "agent.open": "打开 Linear agent",
+  "agents.title": "Agent 任务",
+  "agents.empty": "还没有 Agent 任务——打开一个事项,把它委派给 Agent 试试。",
+  "agents.status.queued": "排队中",
+  "agents.status.working": "工作中",
+  "agents.status.needsReview": "待审查",
+  "agents.status.done": "已完成",
+  "agents.status.failed": "失败",
+  "agents.review": "审查变更",
+  "agents.settings": "Agent 设置",
+  "agents.apiKey": "Anthropic API key",
+  "agents.apiKeyHint": "仅保存在你的浏览器本地。留空则使用内置模拟引擎。",
+  "agents.model": "模型",
+  "agents.save": "保存",
+  "agents.delegate": "委派给 Agent",
+  "agents.working": "Agent 工作中…",
+  "palette.goAgents": "前往 Agent 任务"
 };
 var dictionaries = { en, zh };
 function translate(locale, key) {
@@ -20104,6 +20272,7 @@ function Sidebar({
   const isDiff = view.type === "diff";
   const isInbox = view.type === "inbox";
   const isProjects = view.type === "projects";
+  const isAgents = view.type === "agents";
   return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("aside", {
     className: "sidebar",
     children: [
@@ -20257,7 +20426,8 @@ function Sidebar({
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-            className: "nav-item",
+            className: `nav-item${isAgents ? " active" : ""}`,
+            onClick: () => onNavigate({ type: "agents" }),
             children: [
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(AgentTasks, {}, undefined, false, undefined, this),
               t("nav.agentTasks")
@@ -21393,7 +21563,10 @@ function ActivityFeed({ items, onOpenDiff }) {
 function IssueDetail({
   issue,
   onOpenDiff,
-  onUpdate
+  onUpdate,
+  agentTask,
+  onDelegate,
+  onViewAgent
 }) {
   const { t } = useI18n();
   return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(jsx_dev_runtime9.Fragment, {
@@ -21618,6 +21791,40 @@ function IssueDetail({
                       "Linear"
                     ]
                   }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                className: "prop-label",
+                children: "Agent"
+              }, undefined, false, undefined, this),
+              !agentTask && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+                className: "btn sm delegate-btn",
+                onClick: () => onDelegate(issue),
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinearLogo, {
+                    size: 11
+                  }, undefined, false, undefined, this),
+                  t("agents.delegate")
+                ]
+              }, undefined, true, undefined, this),
+              agentTask && (agentTask.status === "queued" || agentTask.status === "working") && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+                className: "btn sm delegate-btn working",
+                onClick: onViewAgent,
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                    className: "spinner"
+                  }, undefined, false, undefined, this),
+                  t("agents.working")
+                ]
+              }, undefined, true, undefined, this),
+              agentTask && agentTask.status === "needsReview" && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+                className: "btn sm delegate-btn review",
+                onClick: () => onOpenDiff("ENG-2498"),
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinearLogo, {
+                    size: 11
+                  }, undefined, false, undefined, this),
+                  t("agents.review")
                 ]
               }, undefined, true, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
@@ -22737,6 +22944,15 @@ function CommandPalette({
         run: () => onNavigate({ type: "projects" })
       },
       {
+        key: "nav-agents",
+        section: t("palette.navigation"),
+        label: t("palette.goAgents"),
+        icon: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Compose, {
+          size: 14
+        }, undefined, false, undefined, this),
+        run: () => onNavigate({ type: "agents" })
+      },
+      {
         key: "nav-reviews",
         section: t("palette.navigation"),
         label: t("palette.goReviews"),
@@ -23026,8 +23242,392 @@ function NewIssueModal({
   }, undefined, false, undefined, this);
 }
 
-// src/router.ts
+// src/components/AgentTasksView.tsx
 var import_react9 = __toESM(require_react(), 1);
+var jsx_dev_runtime16 = __toESM(require_jsx_dev_runtime(), 1);
+var statusKey = {
+  queued: "agents.status.queued",
+  working: "agents.status.working",
+  needsReview: "agents.status.needsReview",
+  done: "agents.status.done",
+  failed: "agents.status.failed"
+};
+var statusColor = {
+  queued: "var(--text-3)",
+  working: "var(--yellow)",
+  needsReview: "var(--accent-text)",
+  done: "var(--green)",
+  failed: "var(--red)"
+};
+function Spinner() {
+  return /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+    className: "spinner"
+  }, undefined, false, undefined, this);
+}
+function elapsed(t) {
+  const end = t.finishedAt ?? Date.now();
+  const s = Math.max(1, Math.round((end - t.createdAt) / 1000));
+  if (s < 60)
+    return `${s}s`;
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+function AgentTasksView({
+  tasks,
+  onOpenIssue,
+  onOpenDiff,
+  onApprove,
+  onOpenSettings
+}) {
+  const { t } = useI18n();
+  const [expanded, setExpanded] = import_react9.useState(null);
+  return /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(jsx_dev_runtime16.Fragment, {
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("header", {
+        className: "panel-header",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            className: "panel-header-left",
+            children: /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+              className: "panel-title",
+              children: t("agents.title")
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            className: "panel-header-right",
+            children: /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("button", {
+              className: "btn sm",
+              onClick: onOpenSettings,
+              children: t("agents.settings")
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+        className: "agent-tasks",
+        children: [
+          tasks.length === 0 && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            className: "agents-empty",
+            children: t("agents.empty")
+          }, undefined, false, undefined, this),
+          tasks.map((task) => {
+            const isOpen = expanded === task.id;
+            const active = task.status === "queued" || task.status === "working";
+            return /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+              className: "agent-task",
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("button", {
+                  className: "agent-task-row",
+                  onClick: () => setExpanded(isOpen ? null : task.id),
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "agent-task-status",
+                      style: { color: statusColor[task.status] },
+                      children: [
+                        task.status === "working" ? /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Spinner, {}, undefined, false, undefined, this) : task.status === "done" ? /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(StatusDone, {
+                          size: 13
+                        }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                          className: "chip-dot",
+                          style: { background: statusColor[task.status] }
+                        }, undefined, false, undefined, this),
+                        t(statusKey[task.status])
+                      ]
+                    }, undefined, true, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(BotAvatar, {
+                      size: "sm"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "issue-id",
+                      style: { width: "auto", cursor: "pointer" },
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        onOpenIssue(task.issueId);
+                      },
+                      children: task.issueId
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "agent-task-title",
+                      children: task.title
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "issue-row-spacer"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "model-badge",
+                      children: task.model
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "agent-task-time",
+                      children: elapsed(task)
+                    }, undefined, false, undefined, this),
+                    task.status === "needsReview" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(jsx_dev_runtime16.Fragment, {
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("button", {
+                          className: "btn sm",
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            onOpenDiff();
+                          },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Eye, {
+                              size: 12
+                            }, undefined, false, undefined, this),
+                            t("agents.review")
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("button", {
+                          className: "btn sm primary",
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            onApprove(task.id);
+                          },
+                          children: "✓"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: `agent-chevron${isOpen ? " open" : ""}`,
+                      children: /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(ChevronDown, {
+                        size: 11
+                      }, undefined, false, undefined, this)
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                (isOpen || active) && task.steps.length > 0 && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                  className: "agent-task-steps",
+                  children: [
+                    (isOpen ? task.steps : task.steps.slice(-1)).map((s, i) => /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                      className: "agent-worked-step",
+                      children: s
+                    }, i, false, undefined, this)),
+                    task.status === "working" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                      className: "agent-worked-step pulse",
+                      children: "…"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                isOpen && task.summary && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                  className: "agent-task-summary",
+                  children: task.summary
+                }, undefined, false, undefined, this)
+              ]
+            }, task.id, true, undefined, this);
+          })
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/SettingsModal.tsx
+var import_react10 = __toESM(require_react(), 1);
+var jsx_dev_runtime17 = __toESM(require_jsx_dev_runtime(), 1);
+var MODEL_OPTIONS = ["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"];
+function SettingsModal({
+  settings,
+  onSave,
+  onClose
+}) {
+  const { t } = useI18n();
+  const [apiKey, setApiKey] = import_react10.useState(settings.apiKey);
+  const [model, setModel] = import_react10.useState(settings.model);
+  import_react10.useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+    className: "overlay",
+    onMouseDown: (e) => e.target === e.currentTarget && onClose(),
+    children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+      className: "modal",
+      style: { width: 480 },
+      children: [
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: "modal-breadcrumb",
+          children: t("agents.settings")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+          className: "settings-label",
+          children: t("agents.apiKey")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+          className: "settings-input",
+          type: "password",
+          placeholder: "sk-ant-…",
+          value: apiKey,
+          onChange: (e) => setApiKey(e.target.value)
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: "settings-hint",
+          children: t("agents.apiKeyHint")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+          className: "settings-label",
+          children: t("agents.model")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+          className: "settings-input",
+          list: "model-options",
+          value: model,
+          onChange: (e) => setModel(e.target.value)
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("datalist", {
+          id: "model-options",
+          children: MODEL_OPTIONS.map((m) => /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("option", {
+            value: m
+          }, m, false, undefined, this))
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: "modal-footer",
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+              className: "btn",
+              onClick: onClose,
+              children: t("modal.cancel")
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+              className: "btn primary",
+              onClick: () => {
+                onSave({ apiKey: apiKey.trim(), model: model.trim() || settings.model });
+                onClose();
+              },
+              children: t("agents.save")
+            }, undefined, false, undefined, this)
+          ]
+        }, undefined, true, undefined, this)
+      ]
+    }, undefined, true, undefined, this)
+  }, undefined, false, undefined, this);
+}
+
+// src/agent/engine.ts
+var import_react11 = __toESM(require_react(), 1);
+
+// src/agent/provider.ts
+var playbooks = [
+  {
+    match: /launch|startup|perf/i,
+    steps: [
+      "Read client/src/startup/AppBoot.swift",
+      "Traced vehicle_state sync in RideStore",
+      "Identified blocking full-refresh call",
+      "Rendered UI at minimum-required-state checkpoint",
+      "Pushed branch and opened draft PR"
+    ],
+    summary: "Startup no longer blocks on full vehicle_state refresh; UI renders once minimum state is present. Draft PR ready for review."
+  },
+  {
+    match: /bug|blank|crash|fix|overlap|keyboard/i,
+    steps: [
+      "Reproduced the issue locally",
+      "Bisected to the offending commit",
+      "Wrote a failing regression test",
+      "Applied a minimal fix and re-ran the suite",
+      "Pushed branch and opened draft PR"
+    ],
+    summary: "Root cause isolated and fixed with a regression test guarding it. Draft PR ready for review."
+  }
+];
+var defaultPlaybook = {
+  steps: [
+    "Read the issue and related code paths",
+    "Sketched an implementation plan",
+    "Applied changes across affected files",
+    "Ran build and existing tests",
+    "Pushed branch and opened draft PR"
+  ],
+  summary: "Implemented the requested change and opened a draft PR for review."
+};
+var simulatedProvider = {
+  async run(input) {
+    const pb = playbooks.find((p) => p.match.test(input.title)) ?? defaultPlaybook;
+    return { steps: pb.steps, summary: pb.summary };
+  }
+};
+var anthropicProvider = {
+  async run(input) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": input.apiKey ?? "",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: input.model,
+        max_tokens: 512,
+        messages: [
+          {
+            role: "user",
+            content: `You are a coding agent working on issue ${input.issueId}: "${input.title}".
+Respond with ONLY a JSON object, no prose: {"steps": [4-6 short past-tense work log lines], "summary": "1-2 sentence result summary ending with the PR being ready for review"}`
+          }
+        ]
+      })
+    });
+    if (!res.ok)
+      throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = data.content?.[0]?.text ?? "";
+    const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    if (!Array.isArray(parsed.steps) || typeof parsed.summary !== "string") {
+      throw new Error("bad response shape");
+    }
+    return { steps: parsed.steps.map(String), summary: parsed.summary };
+  }
+};
+function pickProvider(apiKey) {
+  return apiKey ? anthropicProvider : simulatedProvider;
+}
+
+// src/agent/engine.ts
+var STEP_DELAY_MS = 1300;
+function useAgentEngine(state, dispatch) {
+  const running = import_react11.useRef(new Set);
+  import_react11.useEffect(() => {
+    state.agentTasks.filter((t) => t.status === "working" && !running.current.has(t.id)).forEach((t) => dispatch({ type: "agentStatus", id: t.id, status: "queued" }));
+  }, []);
+  import_react11.useEffect(() => {
+    const queued = state.agentTasks.filter((t) => t.status === "queued" && !running.current.has(t.id));
+    queued.forEach((task) => {
+      running.current.add(task.id);
+      dispatch({ type: "agentStatus", id: task.id, status: "working" });
+      (async () => {
+        let result;
+        try {
+          result = await pickProvider(state.settings.apiKey || undefined).run({
+            issueId: task.issueId,
+            title: task.title,
+            model: state.settings.model,
+            apiKey: state.settings.apiKey || undefined
+          });
+        } catch {
+          result = await simulatedProvider.run({
+            issueId: task.issueId,
+            title: task.title,
+            model: state.settings.model
+          });
+        }
+        for (const step of result.steps) {
+          await new Promise((r) => setTimeout(r, STEP_DELAY_MS));
+          dispatch({ type: "agentStep", id: task.id, step });
+        }
+        await new Promise((r) => setTimeout(r, 600));
+        dispatch({
+          type: "agentStatus",
+          id: task.id,
+          status: "needsReview",
+          summary: result.summary
+        });
+        running.current.delete(task.id);
+      })();
+    });
+  }, [state.agentTasks, state.settings, dispatch]);
+}
+
+// src/router.ts
+var import_react12 = __toESM(require_react(), 1);
 var DEFAULT_VIEW = { type: "issue", id: "ENG-2703" };
 function viewToHash(v) {
   switch (v.type) {
@@ -23041,6 +23641,8 @@ function viewToHash(v) {
       return "#/inbox";
     case "projects":
       return "#/projects";
+    case "agents":
+      return "#/agents";
   }
 }
 function parseHash(hash) {
@@ -23057,18 +23659,20 @@ function parseHash(hash) {
       return { type: "inbox" };
     case "projects":
       return { type: "projects" };
+    case "agents":
+      return { type: "agents" };
     default:
       return DEFAULT_VIEW;
   }
 }
 function useHashRoute() {
-  const [view, setViewState] = import_react9.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
-  import_react9.useEffect(() => {
+  const [view, setViewState] = import_react12.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
+  import_react12.useEffect(() => {
     const onHash = () => setViewState(parseHash(window.location.hash));
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const navigate = import_react9.useCallback((v) => {
+  const navigate = import_react12.useCallback((v) => {
     const hash = viewToHash(v);
     if (window.location.hash === hash) {
       setViewState(v);
@@ -23080,10 +23684,18 @@ function useHashRoute() {
 }
 
 // src/store.ts
-var import_react10 = __toESM(require_react(), 1);
+var import_react13 = __toESM(require_react(), 1);
+var DEFAULT_AGENT_MODEL = "claude-sonnet-4-5";
 var STORAGE_KEY = "linear-clone-state-v1";
 function defaultState() {
-  return { issues, notifications, theme: "dark", locale: "en" };
+  return {
+    issues,
+    notifications,
+    theme: "dark",
+    locale: "en",
+    agentTasks: [],
+    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL }
+  };
 }
 function loadState() {
   try {
@@ -23098,7 +23710,12 @@ function loadState() {
       issues: parsed.issues,
       notifications: parsed.notifications,
       theme: parsed.theme === "light" ? "light" : "dark",
-      locale: parsed.locale === "zh" ? "zh" : "en"
+      locale: parsed.locale === "zh" ? "zh" : "en",
+      agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
+      settings: {
+        apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
+        model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL
+      }
     };
   } catch {
     return defaultState();
@@ -23148,8 +23765,27 @@ function reducer(state, action) {
       return { ...state, theme: action.theme };
     case "setLocale":
       return { ...state, locale: action.locale };
+    case "delegate":
+      return { ...state, agentTasks: [action.task, ...state.agentTasks] };
+    case "agentStep":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, steps: [...t.steps, action.step] } : t)
+      };
+    case "agentStatus":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? {
+          ...t,
+          status: action.status,
+          summary: action.summary ?? t.summary,
+          finishedAt: action.status === "needsReview" || action.status === "done" || action.status === "failed" ? Date.now() : t.finishedAt
+        } : t)
+      };
+    case "setSettings":
+      return { ...state, settings: { ...state.settings, ...action.settings } };
     case "reset":
-      return { ...defaultState(), theme: state.theme, locale: state.locale };
+      return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings };
     default:
       return state;
   }
@@ -23159,31 +23795,32 @@ function nextIssueId(issues2) {
   return `ENG-${maxNum + 1}`;
 }
 function useAppStore() {
-  const [state, dispatch] = import_react10.useReducer(reducer, undefined, loadState);
-  import_react10.useEffect(() => saveState(state), [state]);
-  import_react10.useEffect(() => {
+  const [state, dispatch] = import_react13.useReducer(reducer, undefined, loadState);
+  import_react13.useEffect(() => saveState(state), [state]);
+  import_react13.useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
   }, [state.theme]);
   return { state, dispatch };
 }
 
 // src/App.tsx
-var jsx_dev_runtime16 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime18 = __toESM(require_jsx_dev_runtime(), 1);
 function App() {
   const { state, dispatch } = useAppStore();
   const [view, navigate] = useHashRoute();
-  const [paletteOpen, setPaletteOpen] = import_react11.useState(false);
-  const [modalOpen, setModalOpen] = import_react11.useState(false);
-  const [selectedId, setSelectedId] = import_react11.useState(state.issues[0]?.id ?? null);
+  const [paletteOpen, setPaletteOpen] = import_react14.useState(false);
+  const [modalOpen, setModalOpen] = import_react14.useState(false);
+  const [settingsOpen, setSettingsOpen] = import_react14.useState(false);
+  const [selectedId, setSelectedId] = import_react14.useState(state.issues[0]?.id ?? null);
   const allIssues = state.issues;
-  const orderedIds = import_react11.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
+  const orderedIds = import_react14.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
   const addIssue = (partial) => {
     const issue = { ...partial, id: nextIssueId(allIssues), date: "Jul 26" };
     dispatch({ type: "addIssue", issue });
     navigate({ type: "list" });
     setSelectedId(issue.id);
   };
-  import_react11.useEffect(() => {
+  import_react14.useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -23227,14 +23864,29 @@ function App() {
     setSelectedId(id);
     navigate({ type: "issue", id });
   };
+  useAgentEngine(state, dispatch);
+  const delegateIssue = (issue) => {
+    dispatch({
+      type: "delegate",
+      task: {
+        id: `task-${Date.now()}`,
+        issueId: issue.id,
+        title: issue.title,
+        status: "queued",
+        model: state.settings.model,
+        steps: [],
+        createdAt: Date.now()
+      }
+    });
+  };
   const toggleTheme = () => dispatch({ type: "setTheme", theme: state.theme === "dark" ? "light" : "dark" });
   const toggleLocale = () => dispatch({ type: "setLocale", locale: state.locale === "en" ? "zh" : "en" });
-  return /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(I18nProvider, {
+  return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(I18nProvider, {
     locale: state.locale,
-    children: /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+    children: /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
       className: "app",
       children: [
-        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Sidebar, {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(Sidebar, {
           view,
           onNavigate: navigate,
           theme: state.theme,
@@ -23242,10 +23894,10 @@ function App() {
           locale: state.locale,
           onToggleLocale: toggleLocale
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("main", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("main", {
           className: "main",
           children: [
-            view.type === "list" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(IssueList, {
+            view.type === "list" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(IssueList, {
               issues: allIssues,
               selectedId,
               onSelect: setSelectedId,
@@ -23254,27 +23906,37 @@ function App() {
               board: !!view.board,
               onToggleBoard: (board) => navigate({ type: "list", board })
             }, undefined, false, undefined, this),
-            view.type === "issue" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(IssueDetail, {
+            view.type === "issue" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(IssueDetail, {
               issue: allIssues.find((i) => i.id === view.id) ?? allIssues[0],
               onOpenDiff: (id) => navigate({ type: "diff", id }),
-              onUpdate: (patch) => view.type === "issue" && dispatch({ type: "updateIssue", id: view.id, patch })
+              onUpdate: (patch) => view.type === "issue" && dispatch({ type: "updateIssue", id: view.id, patch }),
+              agentTask: state.agentTasks.find((a) => a.issueId === view.id && a.status !== "done" && a.status !== "failed"),
+              onDelegate: delegateIssue,
+              onViewAgent: () => navigate({ type: "agents" })
             }, undefined, false, undefined, this),
-            view.type === "diff" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(DiffView, {
+            view.type === "diff" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(DiffView, {
               onBack: () => navigate({ type: "list" })
             }, undefined, false, undefined, this),
-            view.type === "inbox" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(InboxView, {
+            view.type === "inbox" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(InboxView, {
               items: state.notifications,
               onRead: (id) => dispatch({ type: "readNotification", id }),
               onReadAll: () => dispatch({ type: "readAllNotifications" }),
               onOpenIssue: openIssue
             }, undefined, false, undefined, this),
-            view.type === "projects" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(ProjectsView, {}, undefined, false, undefined, this)
+            view.type === "projects" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(ProjectsView, {}, undefined, false, undefined, this),
+            view.type === "agents" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(AgentTasksView, {
+              tasks: state.agentTasks,
+              onOpenIssue: openIssue,
+              onOpenDiff: () => navigate({ type: "diff", id: "ENG-2498" }),
+              onApprove: (id) => dispatch({ type: "agentStatus", id, status: "done" }),
+              onOpenSettings: () => setSettingsOpen(true)
+            }, undefined, false, undefined, this)
           ]
         }, undefined, true, undefined, this),
-        view.type === "issue" && view.id === "ENG-2703" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(FloatingAgentPanel, {
+        view.type === "issue" && view.id === "ENG-2703" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(FloatingAgentPanel, {
           onOpenDiff: () => navigate({ type: "diff", id: "ENG-2498" })
         }, undefined, false, undefined, this),
-        paletteOpen && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(CommandPalette, {
+        paletteOpen && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(CommandPalette, {
           issues: allIssues,
           theme: state.theme,
           onClose: () => setPaletteOpen(false),
@@ -23301,12 +23963,17 @@ function App() {
             dispatch({ type: "reset" });
           }
         }, undefined, false, undefined, this),
-        modalOpen && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(NewIssueModal, {
+        modalOpen && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(NewIssueModal, {
           onClose: () => setModalOpen(false),
           onCreate: (p) => {
             addIssue(p);
             setModalOpen(false);
           }
+        }, undefined, false, undefined, this),
+        settingsOpen && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(SettingsModal, {
+          settings: state.settings,
+          onSave: (s) => dispatch({ type: "setSettings", settings: s }),
+          onClose: () => setSettingsOpen(false)
         }, undefined, false, undefined, this)
       ]
     }, undefined, true, undefined, this)
@@ -23314,8 +23981,8 @@ function App() {
 }
 
 // src/main.tsx
-var jsx_dev_runtime17 = __toESM(require_jsx_dev_runtime(), 1);
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime17.jsxDEV(import_react12.StrictMode, {
-  children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(App, {}, undefined, false, undefined, this)
+var jsx_dev_runtime19 = __toESM(require_jsx_dev_runtime(), 1);
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime19.jsxDEV(import_react15.StrictMode, {
+  children: /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(App, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));
 </script></body></html>
