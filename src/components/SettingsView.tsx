@@ -1,26 +1,33 @@
 import { useRef, useState } from 'react'
-import type { AgentSettings, ProviderKind, ProviderSettings, Theme } from '../store'
-import { PROVIDER_DEFAULTS } from '../store'
-import { useI18n, type Locale, type MessageKey } from '../i18n'
+import type { AgentSettings, ProviderProfile, Theme } from '../store'
+import { PROVIDER_DEFAULTS, SIMULATED_ID } from '../store'
+import { anthropicHeaders, anthropicMessagesUrl } from '../agent/provider'
+import { useI18n, type Locale } from '../i18n'
 import { Moon, StatusDone, Sun } from './Icons'
 
-const MODEL_HINTS: Record<ProviderKind, string[]> = {
-  simulated: [],
+const MODEL_HINTS: Record<'anthropic' | 'openai', string[]> = {
   anthropic: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5'],
   openai: ['gpt-4o-mini', 'gpt-4o', 'deepseek-chat', 'deepseek-reasoner', 'kimi-k2', 'glm-4.7', 'qwen3-coder'],
 }
 
-const KIND_LABEL: Record<ProviderKind, MessageKey> = {
-  simulated: 'provider.simulated',
-  anthropic: 'provider.anthropic',
-  openai: 'provider.openai',
-}
+// ccswitch-style presets: pick one, tweak, save.
+const PRESETS: { name: string; kind: 'anthropic' | 'openai'; baseUrl: string; model: string }[] = [
+  { name: 'Claude 中转站', kind: 'anthropic', baseUrl: '', model: 'claude-sonnet-4-5' },
+  { name: 'OpenAI 中转站', kind: 'openai', baseUrl: '', model: '' },
+  { name: 'Anthropic 官方', kind: 'anthropic', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-4-5' },
+  { name: 'DeepSeek', kind: 'openai', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  { name: 'Kimi (Moonshot)', kind: 'openai', baseUrl: 'https://api.moonshot.cn/v1', model: 'kimi-k2-0711-preview' },
+  { name: '智谱 GLM', kind: 'openai', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.6' },
+  { name: '通义千问', kind: 'openai', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen3-max' },
+  { name: '硅基流动', kind: 'openai', baseUrl: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V3' },
+  { name: 'OpenAI 官方', kind: 'openai', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+]
 
 type TestState = { status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }
 
-function TestBadge({ state }: { state: TestState }) {
+function TestBadge({ state }: { state?: TestState }) {
   const { t } = useI18n()
-  if (state.status === 'idle') return null
+  if (!state || state.status === 'idle') return null
   if (state.status === 'testing')
     return (
       <span className="test-result">
@@ -43,7 +50,9 @@ export default function SettingsView({
   theme,
   locale,
   onSettings,
-  onProvider,
+  onSaveProfile,
+  onDeleteProfile,
+  onActivate,
   onTheme,
   onLocale,
   onExport,
@@ -55,7 +64,9 @@ export default function SettingsView({
   theme: Theme
   locale: Locale
   onSettings: (patch: Partial<Omit<AgentSettings, 'provider'>>) => void
-  onProvider: (patch: Partial<ProviderSettings>) => void
+  onSaveProfile: (profile: ProviderProfile) => void
+  onDeleteProfile: (id: string) => void
+  onActivate: (id: string) => void
   onTheme: (t: Theme) => void
   onLocale: (l: Locale) => void
   onExport: () => void
@@ -64,66 +75,60 @@ export default function SettingsView({
   storageBytes: number
 }) {
   const { t } = useI18n()
-  const provider = settings.provider
   const fileRef = useRef<HTMLInputElement>(null)
-  const [aiTest, setAiTest] = useState<TestState>({ status: 'idle' })
+  const [draft, setDraft] = useState<ProviderProfile | null>(null)
+  const [tests, setTests] = useState<Record<string, TestState>>({})
   const [ghTest, setGhTest] = useState<TestState>({ status: 'idle' })
+  const active = settings.activeProviderId
 
-  const switchKind = (kind: ProviderKind) => {
-    if (kind === provider.kind) return
-    const prevDefaults = PROVIDER_DEFAULTS[provider.kind]
-    const nextDefaults = PROVIDER_DEFAULTS[kind]
-    onProvider({
-      kind,
-      // Base URL: keep only if the user typed a custom one.
-      baseUrl:
-        !provider.baseUrl || provider.baseUrl === prevDefaults.baseUrl
-          ? nextDefaults.baseUrl
-          : provider.baseUrl,
-      // Model: vendor families don't share model names — reset to the new
-      // default unless the current value already belongs to the new family.
-      model: MODEL_HINTS[kind].includes(provider.model) ? provider.model : nextDefaults.model,
-    })
-    setAiTest({ status: 'idle' })
-  }
+  const setTest = (key: string, state: TestState) => setTests((s) => ({ ...s, [key]: state }))
 
-  const testProvider = async () => {
-    setAiTest({ status: 'testing' })
+  const testProfile = async (p: Omit<ProviderProfile, 'id' | 'name'>, key: string) => {
+    setTest(key, { status: 'testing' })
     try {
-      let res: Response
-      if (provider.kind === 'anthropic') {
-        res = await fetch(`${stripSlash(provider.baseUrl || PROVIDER_DEFAULTS.anthropic.baseUrl)}/v1/messages`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-api-key': provider.apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: provider.model,
-            max_tokens: 1,
-            messages: [{ role: 'user', content: 'ping' }],
-          }),
-        })
+      const res =
+        p.kind === 'anthropic'
+          ? await fetch(anthropicMessagesUrl(p.baseUrl), {
+              method: 'POST',
+              headers: anthropicHeaders(p.apiKey, p.baseUrl),
+              body: JSON.stringify({
+                model: p.model,
+                max_tokens: 1,
+                messages: [{ role: 'user', content: 'ping' }],
+              }),
+            })
+          : await fetch(`${stripSlash(p.baseUrl || PROVIDER_DEFAULTS.openai.baseUrl)}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+                authorization: `Bearer ${p.apiKey}`,
+              },
+              body: JSON.stringify({
+                model: p.model,
+                max_tokens: 1,
+                messages: [{ role: 'user', content: 'ping' }],
+              }),
+            })
+      if (res.ok) {
+        setTest(key, { status: 'ok', message: `${p.model} · ${t('settings.testOk')}` })
       } else {
-        res = await fetch(`${stripSlash(provider.baseUrl || PROVIDER_DEFAULTS.openai.baseUrl)}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${provider.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: provider.model,
-            max_tokens: 1,
-            messages: [{ role: 'user', content: 'ping' }],
-          }),
-        })
+        // Surface the server's own error text — 401 vs 404 vs bad model
+        // are very different fixes.
+        let detail = `HTTP ${res.status}`
+        try {
+          const data = await res.json()
+          const msg = data?.error?.message ?? data?.message
+          if (msg) detail += ` — ${String(msg).slice(0, 140)}`
+        } catch {
+          // non-JSON error body
+        }
+        setTest(key, { status: 'fail', message: detail })
       }
-      if (res.ok) setAiTest({ status: 'ok', message: `${provider.model} · ${t('settings.testOk')}` })
-      else setAiTest({ status: 'fail', message: `HTTP ${res.status}` })
     } catch (e) {
-      setAiTest({ status: 'fail', message: e instanceof Error ? e.message : String(e) })
+      // fetch TypeError = the request never reached the server: CORS or DNS.
+      const message =
+        e instanceof TypeError ? t('settings.corsFail') : e instanceof Error ? e.message : String(e)
+      setTest(key, { status: 'fail', message })
     }
   }
 
@@ -147,6 +152,41 @@ export default function SettingsView({
     }
   }
 
+  const newDraft = (): ProviderProfile => ({
+    id: `p-${Date.now()}`,
+    name: '',
+    kind: 'anthropic',
+    baseUrl: '',
+    apiKey: '',
+    model: 'claude-sonnet-4-5',
+  })
+
+  const applyPreset = (ps: (typeof PRESETS)[number]) =>
+    setDraft((d) => d && { ...d, name: ps.name, kind: ps.kind, baseUrl: ps.baseUrl, model: ps.model })
+
+  const switchDraftKind = (kind: 'anthropic' | 'openai') =>
+    setDraft(
+      (d) =>
+        d && {
+          ...d,
+          kind,
+          model: MODEL_HINTS[kind].includes(d.model) ? d.model : PROVIDER_DEFAULTS[kind].model,
+        },
+    )
+
+  const saveDraft = () => {
+    if (!draft || !draft.name.trim() || !draft.apiKey) return
+    onSaveProfile({
+      ...draft,
+      name: draft.name.trim(),
+      baseUrl: draft.baseUrl.trim(),
+      model: draft.model.trim(),
+      apiKey: draft.apiKey.trim(),
+    })
+    setTest('draft', { status: 'idle' })
+    setDraft(null)
+  }
+
   return (
     <>
       <header className="panel-header">
@@ -155,66 +195,164 @@ export default function SettingsView({
         </div>
       </header>
       <div className="settings-page">
-        {/* ── AI provider ────────────────────────────────────── */}
+        {/* ── AI providers (ccswitch-style profiles) ─────────── */}
         <section className="settings-section">
           <h3 className="settings-section-title">{t('settings.aiSection')}</h3>
-          <p className="settings-section-desc">{t('settings.aiDesc')}</p>
+          <p className="settings-section-desc">{t('provider.listDesc')}</p>
 
-          <label className="settings-label">{t('provider.kind')}</label>
-          <div className="tab-group" style={{ display: 'inline-flex' }}>
-            {(['simulated', 'anthropic', 'openai'] as const).map((kind) => (
-              <button
-                key={kind}
-                className={`tab${provider.kind === kind ? ' active' : ''}`}
-                onClick={() => switchKind(kind)}
-              >
-                {t(KIND_LABEL[kind])}
-              </button>
+          <div className="provider-list">
+            <div className={`provider-row${active === SIMULATED_ID ? ' active' : ''}`}>
+              <span className="provider-dot" />
+              <div className="provider-main">
+                <span className="provider-name">{t('provider.simulated')}</span>
+                <span className="provider-url">{t('provider.simulatedDesc')}</span>
+              </div>
+              <div className="provider-actions">
+                {active === SIMULATED_ID ? (
+                  <span className="provider-active-badge">{t('provider.active')}</span>
+                ) : (
+                  <button className="btn sm" onClick={() => onActivate(SIMULATED_ID)}>
+                    {t('provider.use')}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {settings.providers.map((p) => (
+              <div key={p.id} className={`provider-row${p.id === active ? ' active' : ''}`}>
+                <span className="provider-dot" />
+                <div className="provider-main">
+                  <span className="provider-name">
+                    {p.name}
+                    <span className="provider-kind-badge">
+                      {p.kind === 'anthropic' ? 'Claude' : 'OpenAI'}
+                    </span>
+                  </span>
+                  <span className="provider-url">
+                    {p.baseUrl || PROVIDER_DEFAULTS[p.kind].baseUrl} · {p.model}
+                  </span>
+                  <TestBadge state={tests[p.id]} />
+                </div>
+                <div className="provider-actions">
+                  {p.id === active ? (
+                    <span className="provider-active-badge">{t('provider.active')}</span>
+                  ) : (
+                    <button className="btn sm" onClick={() => onActivate(p.id)}>
+                      {t('provider.use')}
+                    </button>
+                  )}
+                  <button className="btn sm" onClick={() => testProfile(p, p.id)}>
+                    {t('settings.test')}
+                  </button>
+                  <button className="btn sm" onClick={() => setDraft({ ...p })}>
+                    {t('provider.edit')}
+                  </button>
+                  <button className="btn sm danger" onClick={() => onDeleteProfile(p.id)}>
+                    {t('provider.delete')}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
 
-          {provider.kind !== 'simulated' && (
-            <>
+          {!draft && (
+            <button className="btn sm add-provider-btn" onClick={() => setDraft(newDraft())}>
+              + {t('provider.add')}
+            </button>
+          )}
+
+          {draft && (
+            <div className="provider-form">
+              <label className="settings-label">{t('provider.presets')}</label>
+              <div className="preset-chips">
+                {PRESETS.map((ps) => (
+                  <button key={ps.name} className="preset-chip" onClick={() => applyPreset(ps)}>
+                    {ps.name}
+                  </button>
+                ))}
+              </div>
+
+              <label className="settings-label">{t('provider.name')}</label>
+              <input
+                className="settings-input pf-name"
+                placeholder={t('provider.namePlaceholder')}
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              />
+
+              <label className="settings-label">{t('provider.format')}</label>
+              <div className="tab-group" style={{ display: 'inline-flex' }}>
+                <button
+                  className={`tab${draft.kind === 'anthropic' ? ' active' : ''}`}
+                  onClick={() => switchDraftKind('anthropic')}
+                >
+                  {t('provider.anthropicFmt')}
+                </button>
+                <button
+                  className={`tab${draft.kind === 'openai' ? ' active' : ''}`}
+                  onClick={() => switchDraftKind('openai')}
+                >
+                  {t('provider.openaiFmt')}
+                </button>
+              </div>
+
               <label className="settings-label">{t('provider.baseUrl')}</label>
               <input
-                className="settings-input"
-                placeholder={PROVIDER_DEFAULTS[provider.kind].baseUrl}
-                value={provider.baseUrl}
-                onChange={(e) => onProvider({ baseUrl: e.target.value.trim() })}
+                className="settings-input pf-base"
+                placeholder={PROVIDER_DEFAULTS[draft.kind].baseUrl}
+                value={draft.baseUrl}
+                onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value.trim() })}
               />
               <div className="settings-hint">
-                {provider.kind === 'openai' ? t('provider.openaiHint') : t('provider.anthropicHint')}
+                {draft.kind === 'anthropic' ? t('provider.anthropicHint') : t('provider.openaiHint')}
               </div>
 
               <label className="settings-label">API key</label>
-              <div className="settings-row">
-                <input
-                  className="settings-input"
-                  type="password"
-                  placeholder={provider.kind === 'anthropic' ? 'sk-ant-…' : 'sk-…'}
-                  value={provider.apiKey}
-                  onChange={(e) => onProvider({ apiKey: e.target.value.trim() })}
-                />
-                <button className="btn sm" onClick={testProvider} disabled={!provider.apiKey}>
-                  {t('settings.test')}
-                </button>
-              </div>
-              <TestBadge state={aiTest} />
+              <input
+                className="settings-input pf-key"
+                type="password"
+                placeholder={draft.kind === 'anthropic' ? 'sk-ant-… / sk-…' : 'sk-…'}
+                value={draft.apiKey}
+                onChange={(e) => setDraft({ ...draft, apiKey: e.target.value.trim() })}
+              />
 
               <label className="settings-label">{t('agents.model')}</label>
               <input
-                className="settings-input"
+                className="settings-input pf-model"
                 list="model-options"
-                value={provider.model}
-                onChange={(e) => onProvider({ model: e.target.value.trim() })}
+                value={draft.model}
+                onChange={(e) => setDraft({ ...draft, model: e.target.value.trim() })}
               />
               <datalist id="model-options">
-                {MODEL_HINTS[provider.kind].map((m) => (
+                {MODEL_HINTS[draft.kind].map((m) => (
                   <option key={m} value={m} />
                 ))}
               </datalist>
+
+              <TestBadge state={tests['draft']} />
+              <div className="settings-row" style={{ gap: 8, marginTop: 10 }}>
+                <button className="btn sm" onClick={() => testProfile(draft, 'draft')} disabled={!draft.apiKey}>
+                  {t('settings.test')}
+                </button>
+                <button
+                  className="btn sm primary"
+                  onClick={saveDraft}
+                  disabled={!draft.name.trim() || !draft.apiKey}
+                >
+                  {t('provider.saveBtn')}
+                </button>
+                <button
+                  className="btn sm"
+                  onClick={() => {
+                    setDraft(null)
+                    setTest('draft', { status: 'idle' })
+                  }}
+                >
+                  {t('provider.cancel')}
+                </button>
+              </div>
               <div className="settings-hint">{t('agents.apiKeyHint')}</div>
-            </>
+            </div>
           )}
         </section>
 

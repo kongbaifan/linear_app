@@ -401,7 +401,9 @@ export default function App() {
             theme={state.theme}
             locale={state.locale}
             onSettings={(patch) => dispatch({ type: 'setSettings', settings: patch })}
-            onProvider={(patch) => dispatch({ type: 'setProvider', provider: patch })}
+            onSaveProfile={(profile) => dispatch({ type: 'saveProviderProfile', profile })}
+            onDeleteProfile={(id) => dispatch({ type: 'deleteProviderProfile', id })}
+            onActivate={(id) => dispatch({ type: 'activateProvider', id })}
             onTheme={(th) => dispatch({ type: 'setTheme', theme: th })}
             onLocale={(lo) => dispatch({ type: 'setLocale', locale: lo })}
             onExport={() => {

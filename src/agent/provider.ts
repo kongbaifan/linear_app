@@ -248,17 +248,35 @@ export const simulatedProvider: AgentProvider = {
 
 export const DEFAULT_ANTHROPIC_BASE = 'https://api.anthropic.com'
 
+/** Anthropic-format endpoint URL — tolerates a base with or without /v1,
+ *  so both `https://relay.example` and `https://relay.example/v1` work. */
+export function anthropicMessagesUrl(baseUrl: string): string {
+  const base = stripSlash(baseUrl || DEFAULT_ANTHROPIC_BASE).replace(/\/v1$/, '')
+  return `${base}/v1/messages`
+}
+
+/** Anthropic-format auth headers. ccswitch-style relay stations are
+ *  usually configured via ANTHROPIC_AUTH_TOKEN and only validate
+ *  `Authorization: Bearer`; the official API wants `x-api-key`. For
+ *  custom endpoints we send BOTH so either style of relay accepts it. */
+export function anthropicHeaders(apiKey: string, baseUrl: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+  }
+  if (stripSlash(baseUrl || DEFAULT_ANTHROPIC_BASE) !== DEFAULT_ANTHROPIC_BASE) {
+    headers.authorization = `Bearer ${apiKey}`
+  }
+  return headers
+}
+
 export const anthropicProvider: AgentProvider = {
   async run(input) {
-    const base = stripSlash(input.provider.baseUrl || DEFAULT_ANTHROPIC_BASE)
-    const res = await fetch(`${base}/v1/messages`, {
+    const res = await fetch(anthropicMessagesUrl(input.provider.baseUrl), {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': input.provider.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: anthropicHeaders(input.provider.apiKey, input.provider.baseUrl),
       body: JSON.stringify({
         model: input.provider.model,
         max_tokens: 4096,
@@ -424,15 +442,9 @@ export async function chatReply(
   }
   try {
     if (provider.kind === 'anthropic' && provider.apiKey) {
-      const base = stripSlash(provider.baseUrl || DEFAULT_ANTHROPIC_BASE)
-      const res = await fetch(`${base}/v1/messages`, {
+      const res = await fetch(anthropicMessagesUrl(provider.baseUrl), {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': provider.apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: anthropicHeaders(provider.apiKey, provider.baseUrl),
         body: JSON.stringify({
           model: provider.model,
           max_tokens: 2048,

@@ -86,8 +86,26 @@ export interface ProviderSettings {
   model: string
 }
 
+/** A saved provider configuration, ccswitch-style: keep several, one active. */
+export interface ProviderProfile {
+  id: string
+  name: string
+  kind: 'anthropic' | 'openai'
+  baseUrl: string
+  apiKey: string
+  model: string
+}
+
+/** activeProviderId value meaning "no real provider — built-in simulator". */
+export const SIMULATED_ID = 'simulated'
+
 export interface AgentSettings {
+  /** Runtime provider (what the engine and chat actually call). Kept in
+   *  sync with the active profile; 'simulated' when SIMULATED_ID active. */
   provider: ProviderSettings
+  /** Saved provider profiles (中转站、官方 API……), switchable in Settings. */
+  providers: ProviderProfile[]
+  activeProviderId: string
   githubToken: string
   githubRepo: string
 }
@@ -136,6 +154,9 @@ export type Action =
   | { type: 'deleteChat'; id: string }
   | { type: 'setSettings'; settings: Partial<Omit<AgentSettings, 'provider'>> }
   | { type: 'setProvider'; provider: Partial<ProviderSettings> }
+  | { type: 'saveProviderProfile'; profile: ProviderProfile }
+  | { type: 'deleteProviderProfile'; id: string }
+  | { type: 'activateProvider'; id: string }
   | { type: 'importState'; data: unknown }
   | { type: 'reset' }
 
@@ -153,6 +174,8 @@ function defaultState(): AppState {
     chats: [],
     settings: {
       provider: { kind: 'simulated', baseUrl: '', apiKey: '', model: '' },
+      providers: [],
+      activeProviderId: SIMULATED_ID,
       githubToken: '',
       githubRepo: '',
     },
@@ -178,9 +201,50 @@ function sanitizeProvider(settings: any): ProviderSettings {
     : { kind: 'simulated', baseUrl: '', apiKey: '', model: '' }
 }
 
+const SIMULATED_PROVIDER: ProviderSettings = { kind: 'simulated', baseUrl: '', apiKey: '', model: '' }
+
+const profileToProvider = (p: ProviderProfile): ProviderSettings => ({
+  kind: p.kind,
+  baseUrl: p.baseUrl,
+  apiKey: p.apiKey,
+  model: p.model,
+})
+
 function sanitizeSettings(settings: any): AgentSettings {
+  const provider = sanitizeProvider(settings)
+  let providers: ProviderProfile[] = Array.isArray(settings?.providers)
+    ? settings.providers
+        .filter((p: any) => p && typeof p.id === 'string' && (p.kind === 'anthropic' || p.kind === 'openai'))
+        .map((p: any) => ({
+          id: p.id,
+          name: typeof p.name === 'string' && p.name ? p.name : p.kind,
+          kind: p.kind,
+          baseUrl: typeof p.baseUrl === 'string' ? p.baseUrl : '',
+          apiKey: typeof p.apiKey === 'string' ? p.apiKey : '',
+          model: typeof p.model === 'string' ? p.model : '',
+        }))
+    : []
+  let activeProviderId =
+    typeof settings?.activeProviderId === 'string' ? settings.activeProviderId : ''
+  // Migration: a pre-profiles config becomes the first saved profile.
+  if (!Array.isArray(settings?.providers) && provider.kind !== 'simulated') {
+    providers = [
+      {
+        id: 'p-legacy',
+        name: provider.kind === 'anthropic' ? 'Anthropic (Claude)' : 'OpenAI 兼容',
+        kind: provider.kind,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey,
+        model: provider.model,
+      },
+    ]
+    activeProviderId = 'p-legacy'
+  }
+  const active = providers.find((p) => p.id === activeProviderId)
   return {
-    provider: sanitizeProvider(settings),
+    provider: active ? profileToProvider(active) : SIMULATED_PROVIDER,
+    providers,
+    activeProviderId: active ? activeProviderId : SIMULATED_ID,
     githubToken: typeof settings?.githubToken === 'string' ? settings.githubToken : '',
     githubRepo: typeof settings?.githubRepo === 'string' ? settings.githubRepo : '',
   }
@@ -490,6 +554,52 @@ export function reducer(state: AppState, action: Action): AppState {
       }
     case 'deleteChat':
       return { ...state, chats: state.chats.filter((c) => c.id !== action.id) }
+    case 'saveProviderProfile': {
+      const exists = state.settings.providers.some((p) => p.id === action.profile.id)
+      const providers = exists
+        ? state.settings.providers.map((p) => (p.id === action.profile.id ? action.profile : p))
+        : [...state.settings.providers, action.profile]
+      // The first real provider replaces the simulator; editing the active
+      // profile updates the runtime provider immediately.
+      const activate =
+        state.settings.activeProviderId === SIMULATED_ID ||
+        state.settings.activeProviderId === action.profile.id
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          providers,
+          activeProviderId: activate ? action.profile.id : state.settings.activeProviderId,
+          provider: activate ? profileToProvider(action.profile) : state.settings.provider,
+        },
+      }
+    }
+    case 'deleteProviderProfile': {
+      const wasActive = state.settings.activeProviderId === action.id
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          providers: state.settings.providers.filter((p) => p.id !== action.id),
+          activeProviderId: wasActive ? SIMULATED_ID : state.settings.activeProviderId,
+          provider: wasActive ? SIMULATED_PROVIDER : state.settings.provider,
+        },
+      }
+    }
+    case 'activateProvider': {
+      if (action.id === SIMULATED_ID) {
+        return {
+          ...state,
+          settings: { ...state.settings, activeProviderId: SIMULATED_ID, provider: SIMULATED_PROVIDER },
+        }
+      }
+      const prof = state.settings.providers.find((p) => p.id === action.id)
+      if (!prof) return state
+      return {
+        ...state,
+        settings: { ...state.settings, activeProviderId: prof.id, provider: profileToProvider(prof) },
+      }
+    }
     case 'setSettings':
       return { ...state, settings: { ...state.settings, ...action.settings } }
     case 'setProvider':
