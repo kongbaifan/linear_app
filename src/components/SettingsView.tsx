@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AgentSettings, ProviderProfile, Theme } from '../store'
 import { PROVIDER_DEFAULTS, SIMULATED_ID } from '../store'
-import { anthropicHeaders, anthropicMessagesUrl, proxied } from '../agent/provider'
+import { anthropicHeaders, anthropicMessagesUrl, listModels, proxied } from '../agent/provider'
 import { useI18n, type Locale } from '../i18n'
 import { Moon, StatusDone, Sun } from './Icons'
 
@@ -79,7 +79,41 @@ export default function SettingsView({
   const [draft, setDraft] = useState<ProviderProfile | null>(null)
   const [tests, setTests] = useState<Record<string, TestState>>({})
   const [ghTest, setGhTest] = useState<TestState>({ status: 'idle' })
+  const [models, setModels] = useState<string[] | null>(null)
+  const [modelsState, setModelsState] = useState<TestState>({ status: 'idle' })
   const active = settings.activeProviderId
+
+  const fetchModels = async (p: ProviderProfile, silent = false) => {
+    if (!p.apiKey) return
+    if (!silent) setModelsState({ status: 'testing' })
+    try {
+      const list = await listModels(p)
+      setModels(list)
+      setDraft((d) => d && { ...d, models: list })
+      setModelsState({
+        status: 'ok',
+        message: `${list.length} ${t('provider.modelsFound')}`,
+      })
+    } catch (e) {
+      if (silent) {
+        setModelsState({ status: 'idle' })
+      } else {
+        setModelsState({
+          status: 'fail',
+          message: `${t('provider.fetchFail')}: ${e instanceof Error ? e.message : String(e)}`,
+        })
+      }
+    }
+  }
+
+  // Opening the form (add or edit) resets the model list; a profile with a
+  // key auto-refreshes its list quietly — "自动识别" without a click.
+  useEffect(() => {
+    setModels(draft?.models ?? null)
+    setModelsState({ status: 'idle' })
+    if (draft?.apiKey) void fetchModels(draft, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.id])
 
   const setTest = (key: string, state: TestState) => setTests((s) => ({ ...s, [key]: state }))
 
@@ -339,17 +373,40 @@ export default function SettingsView({
               />
 
               <label className="settings-label">{t('agents.model')}</label>
-              <input
-                className="settings-input pf-model"
-                list="model-options"
-                value={draft.model}
-                onChange={(e) => setDraft({ ...draft, model: e.target.value.trim() })}
-              />
+              <div className="settings-row">
+                <input
+                  className="settings-input pf-model"
+                  list="model-options"
+                  value={draft.model}
+                  onChange={(e) => setDraft({ ...draft, model: e.target.value.trim() })}
+                />
+                <button
+                  className="btn sm fetch-models-btn"
+                  onClick={() => fetchModels(draft)}
+                  disabled={!draft.apiKey}
+                >
+                  {t('provider.fetchModels')}
+                </button>
+              </div>
               <datalist id="model-options">
-                {MODEL_HINTS[draft.kind].map((m) => (
+                {[...new Set([...(models ?? []), ...MODEL_HINTS[draft.kind]])].map((m) => (
                   <option key={m} value={m} />
                 ))}
               </datalist>
+              <TestBadge state={modelsState} />
+              {models && models.length > 0 && (
+                <div className="model-list">
+                  {models.map((m) => (
+                    <button
+                      key={m}
+                      className={`model-option${m === draft.model ? ' active' : ''}`}
+                      onClick={() => setDraft({ ...draft, model: m })}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <label className="settings-check">
                 <input

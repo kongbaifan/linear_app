@@ -74,7 +74,10 @@ export default function ChatView({
     })
 
   const modelOptions = () => {
-    const names = [provider.model, ...MODEL_PRESETS[provider.kind]].filter(Boolean)
+    // Prefer the real model list fetched from the provider; presets are
+    // only the fallback when no listing has been fetched yet.
+    const pool = provider.models?.length ? provider.models : MODEL_PRESETS[provider.kind]
+    const names = [provider.model, ...pool].filter(Boolean)
     if (activeModel && !names.includes(activeModel)) names.unshift(activeModel)
     return [...new Set(names)]
   }

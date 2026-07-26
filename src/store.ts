@@ -86,6 +86,8 @@ export interface ProviderSettings {
   model: string
   /** Route requests through /api/proxy (CORS-blocked relay stations). */
   proxy?: boolean
+  /** Model ids fetched from the provider's listing endpoint (cached). */
+  models?: string[]
 }
 
 /** A saved provider configuration, ccswitch-style: keep several, one active. */
@@ -98,6 +100,8 @@ export interface ProviderProfile {
   model: string
   /** Route requests through /api/proxy (CORS-blocked relay stations). */
   proxy?: boolean
+  /** Model ids fetched from the provider's listing endpoint (cached). */
+  models?: string[]
 }
 
 /** activeProviderId value meaning "no real provider — built-in simulator". */
@@ -213,6 +217,7 @@ const profileToProvider = (p: ProviderProfile): ProviderSettings => ({
   apiKey: p.apiKey,
   model: p.model,
   proxy: p.proxy === true,
+  models: p.models,
 })
 
 function sanitizeSettings(settings: any): AgentSettings {
@@ -228,6 +233,9 @@ function sanitizeSettings(settings: any): AgentSettings {
           apiKey: typeof p.apiKey === 'string' ? p.apiKey : '',
           model: typeof p.model === 'string' ? p.model : '',
           proxy: p.proxy === true,
+          models: Array.isArray(p.models)
+            ? p.models.filter((m: unknown) => typeof m === 'string')
+            : undefined,
         }))
     : []
   let activeProviderId =

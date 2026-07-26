@@ -323,6 +323,50 @@ export const openaiProvider: AgentProvider = {
   },
 }
 
+// ─── Model discovery ────────────────────────────────────────────
+// Both API families expose a standard model listing:
+//   OpenAI-compatible: GET {base}/models
+//   Anthropic-format:  GET {base}/v1/models
+// Falls back to the same-origin proxy when the direct call is CORS-blocked.
+
+export async function listModels(p: {
+  kind: string
+  baseUrl: string
+  apiKey: string
+  proxy?: boolean
+}): Promise<string[]> {
+  const url =
+    p.kind === 'anthropic'
+      ? `${stripSlash(p.baseUrl || DEFAULT_ANTHROPIC_BASE).replace(/\/v1$/, '')}/v1/models?limit=200`
+      : `${stripSlash(p.baseUrl || DEFAULT_OPENAI_BASE)}/models`
+  let headers: Record<string, string>
+  if (p.kind === 'anthropic') {
+    headers = anthropicHeaders(p.apiKey, p.baseUrl)
+    delete headers['content-type']
+  } else {
+    headers = { authorization: `Bearer ${p.apiKey}` }
+  }
+  const get = async (u: string) => {
+    const res = await fetch(u, { headers })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    const arr = Array.isArray(data) ? data : data?.data
+    if (!Array.isArray(arr)) throw new Error('unexpected response shape')
+    const ids = arr
+      .map((m: { id?: string } | string) => (typeof m === 'string' ? m : m?.id))
+      .filter((x): x is string => typeof x === 'string' && x.length > 0)
+    if (ids.length === 0) throw new Error('no models returned')
+    return [...new Set(ids)].sort()
+  }
+  try {
+    return await get(p.proxy ? proxied(url) : url)
+  } catch (e) {
+    // Direct call never reached the server → probe the same-origin proxy.
+    if (e instanceof TypeError && !p.proxy) return get(proxied(url))
+    throw e
+  }
+}
+
 export function pickProvider(p: ProviderSettings): AgentProvider {
   if (p.kind === 'anthropic' && p.apiKey) return anthropicProvider
   if (p.kind === 'openai' && p.apiKey) return openaiProvider

@@ -4,19 +4,20 @@
 // forwards the request server-side, where CORS does not apply.
 //
 // Deliberately narrow, not an open proxy:
-// - POST only
+// - POST to completion paths (…/v1/messages, …/chat/completions)
+//   and GET to model listings (…/models) only
 // - https targets only
-// - only AI-completion paths (…/v1/messages, …/chat/completions)
 // - only auth/content headers are forwarded
 
 export const config = { maxDuration: 60 }
 
-const ALLOWED_PATH = /\/(v1\/messages|chat\/completions)$/
+const ALLOWED_POST = /\/(v1\/messages|chat\/completions)$/
+const ALLOWED_GET = /\/models$/
 const FORWARD_HEADERS = ['content-type', 'authorization', 'x-api-key', 'anthropic-version']
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: { message: 'POST only' } })
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    res.status(405).json({ error: { message: 'GET or POST only' } })
     return
   }
   let target
@@ -26,7 +27,8 @@ export default async function handler(req, res) {
     res.status(400).json({ error: { message: 'invalid target url' } })
     return
   }
-  if (target.protocol !== 'https:' || !ALLOWED_PATH.test(target.pathname)) {
+  const allowed = req.method === 'POST' ? ALLOWED_POST : ALLOWED_GET
+  if (target.protocol !== 'https:' || !allowed.test(target.pathname)) {
     res.status(400).json({ error: { message: 'target not allowed' } })
     return
   }
@@ -39,9 +41,14 @@ export default async function handler(req, res) {
   let upstream
   try {
     upstream = await fetch(target, {
-      method: 'POST',
+      method: req.method,
       headers,
-      body: typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {}),
+      body:
+        req.method === 'POST'
+          ? typeof req.body === 'string'
+            ? req.body
+            : JSON.stringify(req.body ?? {})
+          : undefined,
     })
   } catch (e) {
     res.status(502).json({ error: { message: `upstream unreachable: ${e?.message ?? e}` } })
