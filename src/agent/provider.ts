@@ -18,6 +18,7 @@ export interface AgentEdit {
 export interface AgentRunInput {
   issueId: string
   title: string
+  description?: string
   provider: ProviderSettings
   codebase: Record<string, string>
 }
@@ -38,7 +39,8 @@ function buildPrompt(input: AgentRunInput): string {
   const files = Object.entries(input.codebase)
     .map(([path, content]) => `--- ${path} ---\n${content}`)
     .join('\n\n')
-  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".
+  const details = input.description ? `\nDetails: ${input.description}` : ''
+  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}
 
 Here is the codebase:
 
@@ -78,7 +80,7 @@ interface Playbook {
 
 const playbooks: Playbook[] = [
   {
-    match: /launch|startup|perf/i,
+    match: /launch|startup|perf|启动|性能/i,
     steps: [
       'Read client/src/startup/AppBoot.swift',
       'Traced vehicle_state sync in RideStore',
@@ -108,7 +110,7 @@ const playbooks: Playbook[] = [
     ],
   },
   {
-    match: /dim|status card|opacity/i,
+    match: /dim|status card|opacity|透明/i,
     steps: [
       'Read client/src/views/RideHistory',
       'Removed dimmed-row styling from ride cards',
@@ -127,7 +129,7 @@ const playbooks: Playbook[] = [
     ],
   },
   {
-    match: /bug|blank|crash|fix|overlap|keyboard|receipt/i,
+    match: /bug|blank|crash|fix|overlap|keyboard|receipt|修复|崩溃/i,
     steps: [
       'Reproduced the issue locally',
       'Bisected to the offending code path',

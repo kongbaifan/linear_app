@@ -92,7 +92,7 @@ export default function BoardView({
                 >
                   <div className="board-card-top">
                     <span className="issue-id">{issue.id}</span>
-                    {issue.assignee && <Avatar user={issue.assignee} size="sm" />}
+                    <Avatar user={issue.executor} size="sm" />
                   </div>
                   <div className="board-card-title">
                     {priorityMeta[issue.priority].icon(13)}

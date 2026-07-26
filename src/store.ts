@@ -3,10 +3,12 @@
 // sandboxed environments where localStorage is unavailable.
 import { useEffect, useReducer } from 'react'
 import {
-  issues as initialIssues,
-  notifications as initialNotifications,
+  sampleIssues,
+  sampleNotifications,
+  sampleProjects,
   type Issue,
   type Notification,
+  type Project,
   type StatusKey,
 } from './data/mock'
 
@@ -27,6 +29,7 @@ export interface AgentTask {
   id: string
   issueId: string
   title: string
+  description?: string
   status: AgentTaskStatus
   model: string
   steps: string[]
@@ -67,6 +70,7 @@ export const PROVIDER_DEFAULTS: Record<ProviderKind, { baseUrl: string; model: s
 export interface AppState {
   issues: Issue[]
   notifications: Notification[]
+  projects: Project[]
   theme: Theme
   locale: Locale
   agentTasks: AgentTask[]
@@ -80,6 +84,8 @@ export type Action =
   | { type: 'moveIssue'; dragId: string; status: StatusKey; beforeId?: string }
   | { type: 'readNotification'; id: string }
   | { type: 'readAllNotifications' }
+  | { type: 'addProject'; project: Project }
+  | { type: 'deleteProject'; id: string }
   | { type: 'setTheme'; theme: Theme }
   | { type: 'setLocale'; locale: Locale }
   | { type: 'delegate'; task: AgentTask }
@@ -93,14 +99,16 @@ export type Action =
   | { type: 'importState'; data: unknown }
   | { type: 'reset' }
 
-const STORAGE_KEY = 'linear-clone-state-v1'
+const STORAGE_KEY = 'linage-state-v2'
+const LEGACY_KEY = 'linear-clone-state-v1'
 
 function defaultState(): AppState {
   return {
-    issues: initialIssues,
-    notifications: initialNotifications,
+    issues: sampleIssues(),
+    notifications: sampleNotifications(),
+    projects: sampleProjects(),
     theme: 'dark',
-    locale: 'en',
+    locale: 'zh',
     agentTasks: [],
     settings: {
       provider: { kind: 'simulated', baseUrl: '', apiKey: '', model: '' },
@@ -129,22 +137,28 @@ function sanitizeProvider(settings: any): ProviderSettings {
     : { kind: 'simulated', baseUrl: '', apiKey: '', model: '' }
 }
 
+function sanitizeSettings(settings: any): AgentSettings {
+  return {
+    provider: sanitizeProvider(settings),
+    githubToken: typeof settings?.githubToken === 'string' ? settings.githubToken : '',
+    githubRepo: typeof settings?.githubRepo === 'string' ? settings.githubRepo : '',
+  }
+}
+
 /** Coerce arbitrary parsed JSON into a valid AppState (defaults on bad shape). */
 export function sanitizeState(parsed: any): AppState {
-  if (!parsed || !Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
-    return defaultState()
-  }
+  const d = defaultState()
+  if (!parsed || !Array.isArray(parsed.issues)) return d
   return {
     issues: parsed.issues,
-    notifications: parsed.notifications,
+    notifications: Array.isArray(parsed.notifications)
+      ? parsed.notifications.filter((n: any) => n && typeof n.kind === 'string')
+      : d.notifications,
+    projects: Array.isArray(parsed.projects) ? parsed.projects : d.projects,
     theme: parsed.theme === 'light' ? 'light' : 'dark',
-    locale: parsed.locale === 'zh' ? 'zh' : 'en',
+    locale: parsed.locale === 'en' ? 'en' : 'zh',
     agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
-    settings: {
-      provider: sanitizeProvider(parsed.settings),
-      githubToken: typeof parsed.settings?.githubToken === 'string' ? parsed.settings.githubToken : '',
-      githubRepo: typeof parsed.settings?.githubRepo === 'string' ? parsed.settings.githubRepo : '',
-    },
+    settings: sanitizeSettings(parsed.settings),
     codebase:
       parsed.codebase && typeof parsed.codebase === 'object'
         ? { ...initialCodebase, ...parsed.codebase }
@@ -155,8 +169,20 @@ export function sanitizeState(parsed: any): AppState {
 function loadState(): AppState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultState()
-    return sanitizeState(JSON.parse(raw))
+    if (raw) return sanitizeState(JSON.parse(raw))
+    // v1 → v2 migration: the old fake-team content is retired; carry over
+    // only the user's real configuration (provider, GitHub, theme, locale).
+    const legacy = window.localStorage.getItem(LEGACY_KEY)
+    if (legacy) {
+      const parsed = JSON.parse(legacy)
+      const d = defaultState()
+      d.settings = sanitizeSettings(parsed?.settings)
+      d.theme = parsed?.theme === 'light' ? 'light' : 'dark'
+      d.locale = parsed?.locale === 'en' ? 'en' : 'zh'
+      window.localStorage.removeItem(LEGACY_KEY)
+      return d
+    }
+    return defaultState()
   } catch {
     return defaultState()
   }
@@ -172,6 +198,10 @@ function saveState(state: AppState) {
   } catch {
     // Storage unavailable (private mode / sandbox) — state lives in memory only.
   }
+}
+
+function notify(state: AppState, n: Notification): Notification[] {
+  return [n, ...state.notifications].slice(0, 50)
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -210,6 +240,16 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         notifications: state.notifications.map((n) => ({ ...n, unread: false })),
       }
+    case 'addProject':
+      return { ...state, projects: [...state.projects, action.project] }
+    case 'deleteProject':
+      return {
+        ...state,
+        projects: state.projects.filter((p) => p.id !== action.id),
+        issues: state.issues.map((i) =>
+          i.project === action.id ? { ...i, project: undefined } : i,
+        ),
+      }
     case 'setTheme':
       return { ...state, theme: action.theme }
     case 'setLocale':
@@ -223,8 +263,9 @@ export function reducer(state: AppState, action: Action): AppState {
           t.id === action.id ? { ...t, steps: [...t.steps, action.step] } : t,
         ),
       }
-    case 'agentStatus':
-      return {
+    case 'agentStatus': {
+      const task = state.agentTasks.find((t) => t.id === action.id)
+      const next = {
         ...state,
         agentTasks: state.agentTasks.map((t) =>
           t.id === action.id
@@ -240,7 +281,22 @@ export function reducer(state: AppState, action: Action): AppState {
             : t,
         ),
       }
-    case 'agentResult':
+      if (task && action.status === 'failed') {
+        next.notifications = notify(state, {
+          id: `n-${task.id}-failed-${Date.now()}`,
+          kind: 'failed',
+          title: task.title,
+          issueId: task.issueId,
+          taskId: task.id,
+          detail: action.summary,
+          time: Date.now(),
+          unread: true,
+        })
+      }
+      return next
+    }
+    case 'agentResult': {
+      const task = state.agentTasks.find((t) => t.id === action.id)
       return {
         ...state,
         agentTasks: state.agentTasks.map((t) =>
@@ -255,16 +311,19 @@ export function reducer(state: AppState, action: Action): AppState {
               }
             : t,
         ),
+        notifications: task
+          ? notify(state, {
+              id: `n-${task.id}-review`,
+              kind: 'needsReview',
+              title: task.title,
+              issueId: task.issueId,
+              taskId: task.id,
+              time: Date.now(),
+              unread: true,
+            })
+          : state.notifications,
       }
-    case 'githubApplied':
-      return {
-        ...state,
-        agentTasks: state.agentTasks.map((t) =>
-          t.id === action.id
-            ? { ...t, status: 'done' as const, prUrl: action.prUrl, branch: action.branch }
-            : t,
-        ),
-      }
+    }
     case 'applyChanges': {
       const task = state.agentTasks.find((t) => t.id === action.id)
       if (!task || task.status !== 'needsReview') return state
@@ -278,6 +337,38 @@ export function reducer(state: AppState, action: Action): AppState {
         agentTasks: state.agentTasks.map((t) =>
           t.id === action.id ? { ...t, status: 'done' as const } : t,
         ),
+        notifications: notify(state, {
+          id: `n-${task.id}-applied`,
+          kind: 'applied',
+          title: task.title,
+          issueId: task.issueId,
+          taskId: task.id,
+          time: Date.now(),
+          unread: true,
+        }),
+      }
+    }
+    case 'githubApplied': {
+      const task = state.agentTasks.find((t) => t.id === action.id)
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id
+            ? { ...t, status: 'done' as const, prUrl: action.prUrl, branch: action.branch }
+            : t,
+        ),
+        notifications: task
+          ? notify(state, {
+              id: `n-${task.id}-pr`,
+              kind: 'prCreated',
+              title: task.title,
+              issueId: task.issueId,
+              taskId: task.id,
+              detail: action.prUrl,
+              time: Date.now(),
+              unread: true,
+            })
+          : state.notifications,
       }
     }
     case 'setSettings':
@@ -300,8 +391,8 @@ export function reducer(state: AppState, action: Action): AppState {
 }
 
 export function nextIssueId(issues: Issue[]): string {
-  const maxNum = Math.max(...issues.map((i) => parseInt(i.id.split('-')[1], 10)))
-  return `ENG-${maxNum + 1}`
+  const nums = issues.map((i) => parseInt(i.id.split('-')[1], 10)).filter((n) => !isNaN(n))
+  return `LIN-${(nums.length ? Math.max(...nums) : 0) + 1}`
 }
 
 export function useAppStore() {

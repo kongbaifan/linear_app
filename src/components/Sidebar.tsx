@@ -8,7 +8,6 @@ import {
   Gear,
   Inbox,
   Initiatives,
-  Insights,
   LinageLogo,
   Moon,
   More,
@@ -19,7 +18,6 @@ import {
   Search,
   StatusInProgress,
   Sun,
-  UIRefresh,
 } from './Icons'
 
 const REPO_URL = 'https://github.com/kongbaifan/linear_app'
@@ -175,7 +173,7 @@ export default function Sidebar({
   const { t } = useI18n()
   const isIssue = view.type === 'issue'
   const isList = view.type === 'list'
-  const isDiff = view.type === 'diff'
+  const isReviews = view.type === 'reviews'
   const isInbox = view.type === 'inbox'
   const isProjects = view.type === 'projects'
   const isAgents = view.type === 'agents'
@@ -218,7 +216,7 @@ export default function Sidebar({
           <MyIssues />
           {t('nav.myIssues')}
         </button>
-        <button className={`nav-item${isDiff ? ' active' : ''}`} onClick={() => onNavigate({ type: 'diff', id: 'ENG-2498' })}>
+        <button className={`nav-item${isReviews ? ' active' : ''}`} onClick={() => onNavigate({ type: 'reviews' })}>
           <Reviews />
           {t('nav.reviews')}
         </button>
@@ -252,28 +250,16 @@ export default function Sidebar({
         </button>
         <button
           className={`nav-item${isIssue ? ' active' : ''}`}
-          onClick={() => onNavigate({ type: 'issue', id: 'ENG-2703' })}
+          onClick={() => onNavigate({ type: 'issue', id: 'LIN-1' })}
         >
           <span className="colored" style={{ display: 'inline-flex' }}>
             <StatusInProgress />
           </span>
-          Faster app launch
+          {t('nav.firstSample')}
         </button>
         <button className={`nav-item${isAgents ? ' active' : ''}`} onClick={() => onNavigate({ type: 'agents' })}>
           <AgentTasks />
           {t('nav.agentTasks')}
-        </button>
-        <button className="nav-item">
-          <span className="colored" style={{ display: 'inline-flex', color: '#26b5ce' }}>
-            <UIRefresh />
-          </span>
-          UI Refresh
-        </button>
-        <button className="nav-item">
-          <span className="colored" style={{ display: 'inline-flex', color: '#e5734d' }}>
-            <Insights />
-          </span>
-          {t('nav.agentsInsights')}
         </button>
       </div>
 

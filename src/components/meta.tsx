@@ -30,10 +30,12 @@ export const priorityMeta: Record<PriorityKey, { label: string; icon: (size?: nu
 export const priorityOrder: PriorityKey[] = ['urgent', 'high', 'medium', 'low']
 
 export const allLabels: { name: string; color: string }[] = [
-  { name: 'Performance', color: '#4ea7fc' },
-  { name: 'iOS', color: '#9ca0a8' },
+  { name: '性能', color: '#4ea7fc' },
   { name: 'Bug', color: '#eb5757' },
-  { name: 'Maps', color: '#4cb782' },
-  { name: 'UI Refresh', color: '#26b5ce' },
-  { name: 'Tech Debt', color: '#c678dd' },
+  { name: '功能', color: '#4cb782' },
+  { name: '上手', color: '#26b5ce' },
+  { name: '重构', color: '#c678dd' },
+  { name: '文档', color: '#9ca0a8' },
 ]
+
+export const executorOrder: import('../data/mock').ExecutorKey[] = ['me', 'agent']

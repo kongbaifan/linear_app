@@ -35,12 +35,14 @@ function elapsed(t: AgentTask): string {
 
 export default function AgentTasksView({
   tasks,
+  reviewsOnly = false,
   onOpenIssue,
   onOpenTask,
   onApprove,
   onOpenSettings,
 }: {
   tasks: AgentTask[]
+  reviewsOnly?: boolean
   onOpenIssue: (id: string) => void
   onOpenTask: (id: string) => void
   onApprove: (id: string) => void
@@ -48,12 +50,15 @@ export default function AgentTasksView({
 }) {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState<string | null>(null)
+  const visible = reviewsOnly
+    ? tasks.filter((x) => x.status === 'needsReview' || x.status === 'applying')
+    : tasks
 
   return (
     <>
       <header className="panel-header">
         <div className="panel-header-left">
-          <span className="panel-title">{t('agents.title')}</span>
+          <span className="panel-title">{reviewsOnly ? t('nav.reviews') : t('agents.title')}</span>
         </div>
         <div className="panel-header-right">
           <button className="btn sm" onClick={onOpenSettings}>
@@ -62,8 +67,10 @@ export default function AgentTasksView({
         </div>
       </header>
       <div className="agent-tasks">
-        {tasks.length === 0 && <div className="agents-empty">{t('agents.empty')}</div>}
-        {tasks.map((task) => {
+        {visible.length === 0 && (
+          <div className="agents-empty">{reviewsOnly ? t('reviews.empty') : t('agents.empty')}</div>
+        )}
+        {visible.map((task) => {
           const isOpen = expanded === task.id
           const active = task.status === 'queued' || task.status === 'working'
           return (

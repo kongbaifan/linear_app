@@ -1,147 +1,87 @@
-import type { Issue, PriorityKey, StatusKey } from '../data/mock'
+import type { ExecutorKey, Issue, PriorityKey, Project, StatusKey } from '../data/mock'
 import type { AgentTask } from '../store'
-import { eng2703Activity, users, type ActivityItem, type BodyPart, type EventPart } from '../data/mock'
 import { Avatar, BotAvatar } from './Avatar'
 import { Dropdown } from './Dropdown'
-import { allLabels, priorityMeta, priorityOrder, statusMeta, statusOrder } from './meta'
-import { useI18n } from '../i18n'
+import { allLabels, executorOrder, priorityMeta, priorityOrder, statusMeta, statusOrder } from './meta'
+import { useI18n, type MessageKey } from '../i18n'
 import {
+  ArrowUp,
   ChevronDown,
   ChevronUp,
   CopyIcon,
   Dots,
   GitBranch,
   LinkIcon,
-  Paperclip,
-  Screenful,
-  SlackMark,
-  Sparkle,
-  Star,
-  StatusInProgress,
-  SubIssueArrow,
-  ArrowUp,
   LinageLogo,
+  Paperclip,
+  Projects as ProjectsIcon,
+  Star,
 } from './Icons'
 
-function EventText({ parts, time }: { parts: EventPart[]; time: string }) {
-  return (
-    <span className="event-text">
-      {parts.map((p, i) =>
-        p.t === 'strong' ? (
-          <b key={i}>{p.s}</b>
-        ) : p.t === 'chip' ? (
-          <span key={i} className="chip">
-            <span className="chip-dot" style={{ background: p.color }} />
-            {p.s}
-          </span>
-        ) : (
-          <span key={i}>{p.s}</span>
-        ),
-      )}
-      <span className="event-time">{time}</span>
-    </span>
-  )
+const executorLabel: Record<ExecutorKey, MessageKey> = {
+  me: 'executor.me',
+  agent: 'executor.agent',
 }
 
-function CommentBody({ parts }: { parts: BodyPart[] }) {
-  return (
-    <div className="comment-body">
-      {parts.map((p, i) =>
-        p.t === 'mention' ? (
-          <span key={i} className="mention">
-            {p.s}
-          </span>
-        ) : (
-          <span key={i}>{p.s}</span>
-        ),
-      )}
-    </div>
-  )
+interface ActivityEvent {
+  icon: React.ReactNode
+  textKey: MessageKey
+  extra?: string
+  time: number
+  taskId?: string
 }
 
-function eventIcon(icon: string) {
-  switch (icon) {
-    case 'bot':
-      return <BotAvatar size="sm" />
-    case 'triage':
-      return <Sparkle size={13} />
-    case 'link':
-      return <BotAvatar size="sm" />
-    case 'sparkle':
-      return <Sparkle size={13} />
-    case 'status':
-      return <StatusInProgress size={13} />
-    default:
-      return null
+function buildActivity(issue: Issue, tasks: AgentTask[]): ActivityEvent[] {
+  const events: ActivityEvent[] = [
+    {
+      icon: <Avatar user="me" size="sm" />,
+      textKey: 'activity.created',
+      time: issue.createdAt,
+    },
+  ]
+  for (const task of [...tasks].reverse()) {
+    events.push({
+      icon: <BotAvatar size="sm" />,
+      textKey: 'activity.delegated',
+      extra: task.model,
+      time: task.createdAt,
+      taskId: task.id,
+    })
+    if (task.status === 'needsReview' || task.status === 'done' || task.status === 'applying') {
+      events.push({
+        icon: <BotAvatar size="sm" />,
+        textKey: 'activity.finished',
+        extra: task.summary,
+        time: task.finishedAt ?? task.createdAt,
+        taskId: task.id,
+      })
+    }
+    if (task.status === 'done') {
+      events.push({
+        icon: <Avatar user="me" size="sm" />,
+        textKey: task.prUrl ? 'activity.prCreated' : 'activity.approved',
+        extra: task.prUrl,
+        time: task.finishedAt ?? task.createdAt,
+        taskId: task.id,
+      })
+    }
+    if (task.status === 'failed') {
+      events.push({
+        icon: <BotAvatar size="sm" />,
+        textKey: 'activity.failed',
+        extra: task.summary,
+        time: task.finishedAt ?? task.createdAt,
+        taskId: task.id,
+      })
+    }
   }
-}
-
-function ActivityFeed({ items, onOpenDiff }: { items: ActivityItem[]; onOpenDiff: () => void }) {
-  return (
-    <div className="activity">
-      {items.map((item, i) => {
-        if (item.kind === 'event') {
-          return (
-            <div key={i} className="activity-event">
-              <span className="event-icon">{eventIcon(item.icon)}</span>
-              <EventText parts={item.html} time={item.time} />
-            </div>
-          )
-        }
-        if (item.kind === 'comments') {
-          return (
-            <div key={i} className="comment-card">
-              {item.comments.map((c, j) => (
-                <div key={j} className={`comment${c.reply ? ' reply' : ''}`}>
-                  <div className="comment-head">
-                    <Avatar user={c.author} />
-                    <span className="comment-author">{c.author}</span>
-                    <span className="comment-time">· {c.time}</span>
-                  </div>
-                  <CommentBody parts={c.body} />
-                </div>
-              ))}
-            </div>
-          )
-        }
-        // PR attachment card
-        return (
-          <div key={i} className="activity-event" style={{ display: 'block' }}>
-            <div className="activity-event" style={{ padding: 0 }}>
-              <span className="event-icon">
-                <Sparkle size={13} />
-              </span>
-              <span className="event-text">
-                <b>Changed 2 files</b> Draft PR awaiting your review
-                <span className="event-time">2 min ago</span>
-              </span>
-            </div>
-            <div className="pr-card" onClick={onOpenDiff}>
-              <div className="pr-card-info">
-                <div className="pr-card-line1">
-                  Changed 2 files <span className="added">+4</span> <span className="removed">-4</span>
-                </div>
-                <div className="pr-card-line2">
-                  <GitBranch size={13} />
-                  Draft Update homepage H1
-                </div>
-                <div className="pr-card-branch">master ← ride/drv-899-update-homepage-h1-65a6</div>
-              </div>
-              <button className="btn">
-                <Screenful size={13} />
-                Preview
-              </button>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
+  return events.sort((a, b) => a.time - b.time)
 }
 
 export default function IssueDetail({
   issue,
-  onOpenDiff,
+  issueTasks,
+  projects,
   onUpdate,
   agentTask,
   onDelegate,
@@ -149,19 +89,31 @@ export default function IssueDetail({
   onReviewTask,
 }: {
   issue: Issue
-  onOpenDiff: (id: string) => void
+  issueTasks: AgentTask[]
+  projects: Project[]
   onUpdate: (patch: Partial<Issue>) => void
   agentTask?: AgentTask
   onDelegate: (issue: Issue) => void
   onViewAgent: () => void
   onReviewTask: (taskId: string) => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const activity = buildActivity(issue, issueTasks)
+  const fmtTime = (ts: number) =>
+    new Date(ts).toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  const project = projects.find((p) => p.id === issue.project)
+
   return (
     <>
       <header className="panel-header">
         <div className="panel-header-left">
           <span className="panel-title">{issue.title}</span>
+          {issue.sample && <span className="sample-badge">{t('issue.sample')}</span>}
           <span className="star">
             <Star size={12} />
           </span>
@@ -170,9 +122,6 @@ export default function IssueDetail({
           </span>
         </div>
         <div className="panel-header-right">
-          <span className="pager">
-            <b>02</b> / 145
-          </span>
           <button className="icon-btn">
             <ChevronUp size={12} />
           </button>
@@ -186,13 +135,52 @@ export default function IssueDetail({
         <div className="issue-content">
           <div className="issue-content-inner">
             <h1 className="issue-title">{issue.title}</h1>
-            <p className="issue-description">
-              Render UI before <span className="code-chip">vehicle_state</span> sync when minimum
-              required state is present, instead of blocking on full refresh during iOS startup.
-            </p>
+            {issue.description ? (
+              <p className="issue-description">{issue.description}</p>
+            ) : (
+              <p className="issue-description" style={{ color: 'var(--text-3)' }}>
+                {t('issue.noDescription')}
+              </p>
+            )}
 
             <h2 className="section-heading">{t('issue.activity')}</h2>
-            <ActivityFeed items={eng2703Activity} onOpenDiff={() => onOpenDiff('ENG-2498')} />
+            <div className="activity">
+              {activity.map((ev, i) => (
+                <div key={i} className="activity-event">
+                  <span className="event-icon">{ev.icon}</span>
+                  <span className="event-text">
+                    {t(ev.textKey)}
+                    {ev.extra && ev.textKey === 'activity.delegated' && (
+                      <span className="model-badge" style={{ marginLeft: 6 }}>
+                        {ev.extra}
+                      </span>
+                    )}
+                    {ev.extra && ev.textKey === 'activity.prCreated' && (
+                      <>
+                        {' '}
+                        <a href={ev.extra} target="_blank" rel="noreferrer" className="mention">
+                          PR ↗
+                        </a>
+                      </>
+                    )}
+                    {ev.extra &&
+                      (ev.textKey === 'activity.finished' || ev.textKey === 'activity.failed') && (
+                        <span style={{ color: 'var(--text-3)' }}> — {ev.extra}</span>
+                      )}
+                    {ev.taskId &&
+                      (ev.textKey === 'activity.finished') && (
+                        <>
+                          {' '}
+                          <button className="mention" onClick={() => onReviewTask(ev.taskId!)}>
+                            {t('agents.review')}
+                          </button>
+                        </>
+                      )}
+                    <span className="event-time">{fmtTime(ev.time)}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
 
             <div className="composer">
               <span>{t('issue.leaveComment')}</span>
@@ -259,38 +247,40 @@ export default function IssueDetail({
           <Dropdown
             trigger={() => (
               <button className="prop-row">
-                {issue.assignee ? (
-                  <Avatar user={issue.assignee} />
-                ) : (
-                  <span
-                    className="avatar"
-                    style={{ background: 'transparent', border: '1px dashed var(--border-strong)' }}
-                  />
-                )}
-                {issue.assignee ?? t('issue.unassigned')}
+                <Avatar user={issue.executor} />
+                {t(executorLabel[issue.executor])}
               </button>
             )}
-            header={t('issue.assignTo')}
+            header={t('issue.executor')}
+            options={executorOrder.map((e) => ({
+              key: e,
+              label: t(executorLabel[e]),
+              icon: <Avatar user={e} size="sm" />,
+              checked: issue.executor === e,
+            }))}
+            onSelect={(k) => onUpdate({ executor: k as ExecutorKey })}
+          />
+          <Dropdown
+            trigger={() => (
+              <button className="prop-row">
+                <span style={{ color: project ? project.color : 'var(--text-3)', display: 'inline-flex' }}>
+                  <ProjectsIcon size={14} />
+                </span>
+                {project ? project.name : t('issue.noProject')}
+              </button>
+            )}
+            header={t('issue.setProject')}
             options={[
-              { key: '', label: t('issue.noAssignee'), checked: !issue.assignee },
-              ...Object.keys(users).map((u) => ({
-                key: u,
-                label: users[u].name,
-                icon: <Avatar user={u} size="sm" />,
-                checked: issue.assignee === u,
+              { key: '', label: t('issue.noProject'), checked: !issue.project },
+              ...projects.map((p) => ({
+                key: p.id,
+                label: p.name,
+                icon: <span className="chip-dot" style={{ background: p.color }} />,
+                checked: issue.project === p.id,
               })),
             ]}
-            onSelect={(k) => onUpdate({ assignee: k || undefined })}
+            onSelect={(k) => onUpdate({ project: k || undefined })}
           />
-          <button className="prop-row sub">
-            <span style={{ color: 'var(--text-3)', display: 'inline-flex' }}>
-              <SubIssueArrow size={12} />
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <LinageLogo size={11} />
-              Linage
-            </span>
-          </button>
 
           <div className="prop-label">Agent</div>
           {!agentTask && (
@@ -305,7 +295,7 @@ export default function IssueDetail({
               {t('agents.working')}
             </button>
           )}
-          {agentTask && agentTask.status === 'needsReview' && (
+          {agentTask && (agentTask.status === 'needsReview' || agentTask.status === 'applying') && (
             <button className="btn sm delegate-btn review" onClick={() => onReviewTask(agentTask.id)}>
               <LinageLogo size={11} />
               {t('agents.review')}
@@ -345,12 +335,6 @@ export default function IssueDetail({
                 })
               }
             />
-          </div>
-
-          <div className="prop-label">{t('issue.createdVia')}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-2)', fontSize: 12.5 }}>
-            <SlackMark size={13} />
-            Slack
           </div>
         </aside>
       </div>

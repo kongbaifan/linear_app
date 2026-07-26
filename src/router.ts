@@ -5,14 +5,14 @@ import { useCallback, useEffect, useState } from 'react'
 export type View =
   | { type: 'list'; board?: boolean }
   | { type: 'issue'; id: string }
-  | { type: 'diff'; id: string }
+  | { type: 'reviews' }
   | { type: 'inbox' }
   | { type: 'projects' }
   | { type: 'agents' }
   | { type: 'task'; id: string }
   | { type: 'settings' }
 
-export const DEFAULT_VIEW: View = { type: 'issue', id: 'ENG-2703' }
+export const DEFAULT_VIEW: View = { type: 'inbox' }
 
 export function viewToHash(v: View): string {
   switch (v.type) {
@@ -20,8 +20,8 @@ export function viewToHash(v: View): string {
       return v.board ? '#/issues/board' : '#/issues'
     case 'issue':
       return `#/issue/${v.id}`
-    case 'diff':
-      return `#/review/${v.id}`
+    case 'reviews':
+      return '#/reviews'
     case 'inbox':
       return '#/inbox'
     case 'projects':
@@ -44,7 +44,8 @@ export function parseHash(hash: string): View {
     case 'issue':
       return b ? { type: 'issue', id: b } : { type: 'list' }
     case 'review':
-      return { type: 'diff', id: b ?? 'ENG-2498' }
+    case 'reviews':
+      return { type: 'reviews' }
     case 'inbox':
       return { type: 'inbox' }
     case 'projects':

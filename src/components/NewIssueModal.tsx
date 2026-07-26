@@ -1,25 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Issue, PriorityKey, StatusKey } from '../data/mock'
-import { users } from '../data/mock'
+import type { ExecutorKey, Issue, PriorityKey, Project, StatusKey } from '../data/mock'
 import { Dropdown } from './Dropdown'
-import { allLabels, priorityMeta, priorityOrder, statusMeta, statusOrder } from './meta'
+import { allLabels, executorOrder, priorityMeta, priorityOrder, statusMeta, statusOrder } from './meta'
 import { Avatar } from './Avatar'
-import { LinageLogo } from './Icons'
-import { useI18n } from '../i18n'
+import { LinageLogo, Projects as ProjectsIcon } from './Icons'
+import { useI18n, type MessageKey } from '../i18n'
+
+const executorLabel: Record<ExecutorKey, MessageKey> = {
+  me: 'executor.me',
+  agent: 'executor.agent',
+}
 
 export default function NewIssueModal({
+  projects,
   onClose,
   onCreate,
 }: {
+  projects: Project[]
   onClose: () => void
-  onCreate: (issue: Omit<Issue, 'id' | 'date'>) => void
+  onCreate: (issue: Omit<Issue, 'id' | 'createdAt'>) => void
 }) {
   const { t } = useI18n()
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const [status, setStatus] = useState<StatusKey>('todo')
   const [priority, setPriority] = useState<PriorityKey>('medium')
-  const [assignee, setAssignee] = useState<string | undefined>(undefined)
+  const [executor, setExecutor] = useState<ExecutorKey>('me')
+  const [project, setProject] = useState<string | undefined>(undefined)
   const [labels, setLabels] = useState<{ name: string; color: string }[]>([])
   const titleRef = useRef<HTMLInputElement>(null)
 
@@ -36,8 +43,18 @@ export default function NewIssueModal({
 
   const submit = () => {
     if (!title.trim()) return
-    onCreate({ title: title.trim(), status, priority, assignee, labels })
+    onCreate({
+      title: title.trim(),
+      description: desc.trim() || undefined,
+      status,
+      priority,
+      executor,
+      project,
+      labels,
+    })
   }
+
+  const proj = projects.find((p) => p.id === project)
 
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -46,7 +63,7 @@ export default function NewIssueModal({
           <span className="workspace-logo" style={{ width: 16, height: 16 }}>
             <LinageLogo size={9} />
           </span>
-          ENG
+          LIN
           <span className="crumb-sep">›</span>
           {t('modal.newIssue')}
         </div>
@@ -98,20 +115,35 @@ export default function NewIssueModal({
           <Dropdown
             trigger={() => (
               <button className="btn sm">
-                {assignee ? <Avatar user={assignee} size="sm" /> : null}
-                {assignee ?? t('modal.assignee')}
+                <Avatar user={executor} size="sm" />
+                {t(executorLabel[executor])}
+              </button>
+            )}
+            options={executorOrder.map((e) => ({
+              key: e,
+              label: t(executorLabel[e]),
+              icon: <Avatar user={e} size="sm" />,
+              checked: executor === e,
+            }))}
+            onSelect={(k) => setExecutor(k as ExecutorKey)}
+          />
+          <Dropdown
+            trigger={() => (
+              <button className="btn sm">
+                <ProjectsIcon size={13} />
+                {proj ? proj.name : t('issue.noProject')}
               </button>
             )}
             options={[
-              { key: '', label: t('issue.noAssignee'), checked: !assignee },
-              ...Object.keys(users).map((u) => ({
-                key: u,
-                label: users[u].name,
-                icon: <Avatar user={u} size="sm" />,
-                checked: assignee === u,
+              { key: '', label: t('issue.noProject'), checked: !project },
+              ...projects.map((p) => ({
+                key: p.id,
+                label: p.name,
+                icon: <span className="chip-dot" style={{ background: p.color }} />,
+                checked: project === p.id,
               })),
             ]}
-            onSelect={(k) => setAssignee(k || undefined)}
+            onSelect={(k) => setProject(k || undefined)}
           />
           <Dropdown
             closeOnSelect={false}

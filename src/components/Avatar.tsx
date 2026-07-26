@@ -1,19 +1,19 @@
-import { users } from '../data/mock'
+import type { ExecutorKey } from '../data/mock'
 import { LinageLogo } from './Icons'
 
-export function Avatar({ user, size = 'md' }: { user: string; size?: 'sm' | 'md' }) {
-  const u = users[user]
+/** Two actors exist in Linage: you ('me') and the agent ('agent'). */
+export function Avatar({ user, size = 'md' }: { user: ExecutorKey | string; size?: 'sm' | 'md' }) {
   const cls = `avatar${size === 'sm' ? ' sm' : ''}`
-  if (!u) {
+  if (user === 'me') {
     return (
-      <span className={`${cls} bot`}>
-        <LinageLogo size={size === 'sm' ? 8 : 9} />
+      <span className={cls} style={{ background: 'var(--accent)' }}>
+        K
       </span>
     )
   }
   return (
-    <span className={cls} style={{ background: u.color }}>
-      {u.name[0]}
+    <span className={`${cls} bot`}>
+      <LinageLogo size={size === 'sm' ? 8 : 9} />
     </span>
   )
 }

@@ -2,12 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import IssueList from './components/IssueList'
 import IssueDetail from './components/IssueDetail'
-import DiffView from './components/DiffView'
 import InboxView from './components/InboxView'
 import ProjectsView from './components/ProjectsView'
 import CommandPalette from './components/CommandPalette'
 import NewIssueModal from './components/NewIssueModal'
-import { FloatingAgentPanel } from './components/AgentPanel'
 import AgentTasksView from './components/AgentTasksView'
 import TaskDiffView from './components/TaskDiffView'
 import SettingsView from './components/SettingsView'
@@ -49,8 +47,8 @@ export default function App() {
     [allIssues],
   )
 
-  const addIssue = (partial: Omit<Issue, 'id' | 'date'>) => {
-    const issue: Issue = { ...partial, id: nextIssueId(allIssues), date: 'Jul 26' }
+  const addIssue = (partial: Omit<Issue, 'id' | 'createdAt'>) => {
+    const issue: Issue = { ...partial, id: nextIssueId(allIssues), createdAt: Date.now() }
     dispatch({ type: 'addIssue', issue })
     navigate({ type: 'list' })
     setSelectedId(issue.id)
@@ -118,6 +116,7 @@ export default function App() {
         id: `task-${Date.now()}`,
         issueId: issue.id,
         title: issue.title,
+        description: issue.description,
         status: 'queued',
         model: state.settings.provider.kind === 'simulated' ? 'simulated' : state.settings.provider.model,
         steps: [],
@@ -195,31 +194,59 @@ export default function App() {
             onToggleBoard={(board) => navigate({ type: 'list', board })}
           />
         )}
-        {view.type === 'issue' && (
-          <IssueDetail
-            issue={allIssues.find((i) => i.id === view.id) ?? allIssues[0]}
-            onOpenDiff={(id) => navigate({ type: 'diff', id })}
-            onUpdate={(patch) =>
-              view.type === 'issue' && dispatch({ type: 'updateIssue', id: view.id, patch })
-            }
-            agentTask={state.agentTasks.find(
-              (a) => a.issueId === view.id && a.status !== 'done' && a.status !== 'failed',
-            )}
-            onDelegate={delegateIssue}
-            onViewAgent={() => navigate({ type: 'agents' })}
-            onReviewTask={(taskId) => navigate({ type: 'task', id: taskId })}
+        {view.type === 'issue' && (() => {
+          const issue = allIssues.find((i) => i.id === view.id) ?? allIssues[0]
+          if (!issue) return <div className="agents-empty">—</div>
+          return (
+            <IssueDetail
+              issue={issue}
+              issueTasks={state.agentTasks.filter((a) => a.issueId === issue.id)}
+              projects={state.projects}
+              onUpdate={(patch) => dispatch({ type: 'updateIssue', id: issue.id, patch })}
+              agentTask={state.agentTasks.find(
+                (a) => a.issueId === issue.id && a.status !== 'done' && a.status !== 'failed',
+              )}
+              onDelegate={delegateIssue}
+              onViewAgent={() => navigate({ type: 'agents' })}
+              onReviewTask={(taskId) => navigate({ type: 'task', id: taskId })}
+            />
+          )
+        })()}
+        {view.type === 'reviews' && (
+          <AgentTasksView
+            tasks={state.agentTasks}
+            reviewsOnly
+            onOpenIssue={openIssue}
+            onOpenTask={(id) => navigate({ type: 'task', id })}
+            onApprove={(id) => {
+              const task = state.agentTasks.find((a) => a.id === id)
+              if (task) approveTask(task)
+            }}
+            onOpenSettings={() => navigate({ type: 'settings' })}
           />
         )}
-        {view.type === 'diff' && <DiffView onBack={() => navigate({ type: 'list' })} />}
         {view.type === 'inbox' && (
           <InboxView
             items={state.notifications}
             onRead={(id) => dispatch({ type: 'readNotification', id })}
             onReadAll={() => dispatch({ type: 'readAllNotifications' })}
+            onOpenTask={(id) => navigate({ type: 'task', id })}
             onOpenIssue={openIssue}
+            onOpenSettings={() => navigate({ type: 'settings' })}
           />
         )}
-        {view.type === 'projects' && <ProjectsView />}
+        {view.type === 'projects' && (
+          <ProjectsView
+            projects={state.projects}
+            issues={allIssues}
+            githubToken={state.settings.githubToken}
+            githubRepo={state.settings.githubRepo}
+            onAddProject={(proj) => dispatch({ type: 'addProject', project: proj })}
+            onDeleteProject={(id) => dispatch({ type: 'deleteProject', id })}
+            onSelectRepo={(fullName) => dispatch({ type: 'setSettings', settings: { githubRepo: fullName } })}
+            onOpenSettings={() => navigate({ type: 'settings' })}
+          />
+        )}
         {view.type === 'agents' && (
           <AgentTasksView
             tasks={state.agentTasks}
@@ -277,10 +304,6 @@ export default function App() {
         })()}
       </main>
 
-      {view.type === 'issue' && view.id === 'ENG-2703' && (
-        <FloatingAgentPanel onOpenDiff={() => navigate({ type: 'diff', id: 'ENG-2498' })} />
-      )}
-
       {paletteOpen && (
         <CommandPalette
           issues={allIssues}
@@ -310,7 +333,11 @@ export default function App() {
         />
       )}
       {modalOpen && (
-        <NewIssueModal onClose={() => setModalOpen(false)} onCreate={(p) => { addIssue(p); setModalOpen(false) }} />
+        <NewIssueModal
+          projects={state.projects}
+          onClose={() => setModalOpen(false)}
+          onCreate={(p) => { addIssue(p); setModalOpen(false) }}
+        />
       )}
 
     </div>

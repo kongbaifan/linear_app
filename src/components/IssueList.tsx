@@ -138,6 +138,7 @@ export default function IssueList({
                   <span className="issue-id">{issue.id}</span>
                   {meta.icon()}
                   <span className="issue-row-title">{issue.title}</span>
+                  {issue.sample && <span className="sample-badge">{t('issue.sample')}</span>}
                   <span className="issue-row-spacer" />
                   <span className="meta">
                     {issue.labels.map((l) => (
@@ -146,8 +147,10 @@ export default function IssueList({
                         {l.name}
                       </span>
                     ))}
-                    <span>{issue.date}</span>
-                    {issue.assignee && <Avatar user={issue.assignee} />}
+                    <span>
+                      {new Date(issue.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                    <Avatar user={issue.executor} />
                   </span>
                 </button>
               ))}

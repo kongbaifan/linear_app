@@ -1,35 +1,64 @@
-import type { Notification } from '../data/mock'
-import { Avatar, BotAvatar } from './Avatar'
-import { GitBranch, Sparkle, StatusDone, StatusInProgress } from './Icons'
-import { useI18n } from '../i18n'
+import type { Notification, NotificationKind } from '../data/mock'
+import { useI18n, type MessageKey } from '../i18n'
+import { BotAvatar } from './Avatar'
+import { GitBranch, LinageLogo, Sparkle, StatusDone } from './Icons'
 
-function kindIcon(n: Notification) {
-  if (n.actor) return <Avatar user={n.actor} />
-  switch (n.kind) {
-    case 'pr':
-      return <GitBranch size={14} />
-    case 'label':
-      return <Sparkle size={14} />
-    case 'status':
-      return n.issueId === 'ENG-2471' ? <StatusDone size={14} /> : <StatusInProgress size={14} />
-    default:
+const kindLabel: Record<NotificationKind, MessageKey> = {
+  welcome: 'inbox.kind.welcome',
+  needsReview: 'inbox.kind.needsReview',
+  applied: 'inbox.kind.applied',
+  prCreated: 'inbox.kind.prCreated',
+  failed: 'inbox.kind.failed',
+}
+
+function kindIcon(kind: NotificationKind) {
+  switch (kind) {
+    case 'welcome':
+      return <LinageLogo size={13} />
+    case 'needsReview':
       return <BotAvatar size="sm" />
+    case 'applied':
+      return <StatusDone size={14} />
+    case 'prCreated':
+      return <GitBranch size={14} />
+    case 'failed':
+      return <Sparkle size={13} />
   }
+}
+
+function relTime(ts: number, locale: string): string {
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000))
+  const zh = locale === 'zh'
+  if (s < 60) return zh ? '刚刚' : 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  if (s < 86400) return `${Math.floor(s / 3600)}h`
+  return `${Math.floor(s / 86400)}d`
 }
 
 export default function InboxView({
   items,
   onRead,
   onReadAll,
+  onOpenTask,
   onOpenIssue,
+  onOpenSettings,
 }: {
   items: Notification[]
   onRead: (id: string) => void
   onReadAll: () => void
-  onOpenIssue: (id: string) => void
+  onOpenTask: (taskId: string) => void
+  onOpenIssue: (issueId: string) => void
+  onOpenSettings: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const unread = items.filter((i) => i.unread).length
+
+  const open = (n: Notification) => {
+    onRead(n.id)
+    if (n.kind === 'welcome') onOpenSettings()
+    else if (n.taskId) onOpenTask(n.taskId)
+    else if (n.issueId) onOpenIssue(n.issueId)
+  }
 
   return (
     <>
@@ -45,27 +74,26 @@ export default function InboxView({
         </div>
       </header>
       <div className="inbox-list">
+        {items.length === 0 && <div className="agents-empty">{t('inbox.empty')}</div>}
         {items.map((n) => (
-          <button
-            key={n.id}
-            className={`inbox-row${n.unread ? ' unread' : ''}`}
-            onClick={() => {
-              onRead(n.id)
-              onOpenIssue(n.issueId)
-            }}
-          >
+          <button key={n.id} className={`inbox-row${n.unread ? ' unread' : ''}`} onClick={() => open(n)}>
             <span className="inbox-dot" />
-            <span className="inbox-icon">{kindIcon(n)}</span>
+            <span className="inbox-icon">{kindIcon(n.kind)}</span>
             <span className="inbox-main">
               <span className="inbox-title">
-                {n.issueTitle}
-                <span className="issue-id" style={{ width: 'auto', marginLeft: 8 }}>
-                  {n.issueId}
-                </span>
+                {n.title}
+                {n.issueId && (
+                  <span className="issue-id" style={{ width: 'auto', marginLeft: 8 }}>
+                    {n.issueId}
+                  </span>
+                )}
               </span>
-              <span className="inbox-event">{n.event}</span>
+              <span className="inbox-event">
+                {t(kindLabel[n.kind])}
+                {n.kind === 'failed' && n.detail ? ` — ${n.detail}` : ''}
+              </span>
             </span>
-            <span className="inbox-time">{n.time}</span>
+            <span className="inbox-time">{relTime(n.time, locale)}</span>
           </button>
         ))}
       </div>

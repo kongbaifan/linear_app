@@ -119,7 +119,7 @@ export default function CommandPalette({
         section: t('palette.navigation'),
         label: t('palette.goReviews'),
         icon: <Reviews size={14} />,
-        run: () => onNavigate({ type: 'diff', id: 'ENG-2498' }),
+        run: () => onNavigate({ type: 'reviews' }),
       },
       ...issues.map<Item>((i) => ({
         key: i.id,

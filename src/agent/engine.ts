@@ -61,7 +61,7 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
         if (task.target === 'github' && task.repo) {
           dispatch({ type: 'agentStep', id: task.id, step: `Connecting to ${task.repo}…` })
           try {
-            const fetched = await fetchRepoFiles(state.settings.githubToken, task.repo, task.title)
+            const fetched = await fetchRepoFiles(state.settings.githubToken, task.repo, `${task.title} ${task.description ?? ''}`)
             codebase = fetched.codebase
             baseBranch = fetched.baseBranch
             dispatch({
@@ -83,6 +83,7 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
         const input = {
           issueId: task.issueId,
           title: task.title,
+          description: task.description,
           provider: state.settings.provider,
           codebase,
         }
