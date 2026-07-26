@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { AgentTask } from '../store'
 import { renderDiff } from '../agent/diff'
-import { useI18n } from '../i18n'
+import { useI18n, type MessageKey } from '../i18n'
 import { BotAvatar } from './Avatar'
 import { ArrowUp, FileIcon, GitBranch, StatusDone } from './Icons'
 
@@ -138,6 +138,24 @@ export default function TaskDiffView({
           )}
         </div>
       </div>
+
+      {(task.template || task.context || (task.contextFiles?.length ?? 0) > 0) && (
+        <div className="task-context">
+          <span className="task-context-label">{t('task.context')}</span>
+          {task.template && (
+            <span className="ctx-chip tpl">{t(`tpl.${task.template}` as MessageKey)}</span>
+          )}
+          {task.context && <span className="ctx-chip">{t('task.ctxChat')}</span>}
+          {task.contextFiles?.slice(0, 8).map((f) => (
+            <span key={f} className="ctx-chip file" title={f}>
+              {f.split('/').pop()}
+            </span>
+          ))}
+          {(task.contextFiles?.length ?? 0) > 8 && (
+            <span className="ctx-chip">+{task.contextFiles!.length - 8}</span>
+          )}
+        </div>
+      )}
 
       <div className="diff-body">
         {files.map((f) => (

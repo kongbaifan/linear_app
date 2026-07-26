@@ -149,7 +149,7 @@ export default function App() {
 
   const githubMode = !!(state.settings.githubToken && state.settings.githubRepo)
 
-  const delegateIssue = (issue: Issue) => {
+  const delegateIssue = (issue: Issue, template?: string) => {
     const srcChat = issue.chatId ? state.chats.find((c) => c.id === issue.chatId) : undefined
     dispatch({
       type: 'delegate',
@@ -159,6 +159,7 @@ export default function App() {
         title: issue.title,
         description: issue.description,
         context: srcChat ? chatTranscript(srcChat) : undefined,
+        template,
         status: 'queued',
         model: state.settings.provider.kind === 'simulated' ? 'simulated' : state.settings.provider.model,
         steps: [],

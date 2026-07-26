@@ -21,6 +21,8 @@ export interface AgentRunInput {
   description?: string
   /** Prior chat transcript when the issue came from a conversation. */
   conversation?: string
+  /** Delegation-template working-style instruction. */
+  guidance?: string
   /** Review feedback: redo the work, building on the previous attempt. */
   revision?: {
     instruction: string
@@ -48,6 +50,7 @@ function buildPrompt(input: AgentRunInput): string {
     .map(([path, content]) => `--- ${path} ---\n${content}`)
     .join('\n\n')
   const details = input.description ? `\nDetails: ${input.description}` : ''
+  const guidance = input.guidance ? `\n${input.guidance}` : ''
   const discussion = input.conversation
     ? `\n\nThis issue came out of a conversation with the user. Prior discussion (context — honor decisions made here):\n${input.conversation}`
     : ''
@@ -58,7 +61,7 @@ function buildPrompt(input: AgentRunInput): string {
         .map((f) => `--- ${f.path} (your previous result) ---\n${f.after}`)
         .join('\n\n')}\n\nThe user reviewed it and asks: "${input.revision.instruction}"\nProduce a NEW complete set of edits against the ORIGINAL codebase below that incorporates this feedback.`
     : ''
-  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}${discussion}${revision}
+  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}${guidance}${discussion}${revision}
 
 Here is the codebase:
 
@@ -321,6 +324,82 @@ export const openaiProvider: AgentProvider = {
     const data = await res.json()
     return parseAgentJson(data.choices?.[0]?.message?.content ?? '')
   },
+}
+
+// ─── Delegation templates ───────────────────────────────────────
+// Working-style presets injected into the agent prompt at delegation.
+
+export const TEMPLATE_INSTRUCTIONS: Record<string, string> = {
+  conservative:
+    'Working style: CONSERVATIVE FIX. Make the smallest possible change. Do not refactor, do not rename, do not touch public interfaces or formatting outside the fix. Only change exactly what the issue requires.',
+  bold: 'Working style: BOLD REFACTOR. You may restructure for a cleaner solution — extract functions, rename locals, simplify control flow — as long as behavior stays correct and the change remains reviewable.',
+}
+
+// ─── Agentic file selection (round 1 of 2) ──────────────────────
+// Instead of guessing relevance, show the model the file tree and let it
+// name the files it needs; round 2 runs with those full contents.
+
+/** One-shot plain completion (no system prompt, no streaming). */
+async function completeText(provider: ProviderSettings, prompt: string): Promise<string> {
+  if (provider.kind === 'anthropic' && provider.apiKey) {
+    const res = await fetch(maybeProxied(anthropicMessagesUrl(provider.baseUrl), provider.proxy), {
+      method: 'POST',
+      headers: anthropicHeaders(provider.apiKey, provider.baseUrl),
+      body: JSON.stringify({
+        model: provider.model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+    if (!res.ok) throw new Error(`Anthropic API ${res.status}`)
+    const data = await res.json()
+    return (data.content ?? []).map((b: { text?: string }) => b?.text ?? '').join('')
+  }
+  if (provider.kind === 'openai' && provider.apiKey) {
+    const base = stripSlash(provider.baseUrl || DEFAULT_OPENAI_BASE)
+    const res = await fetch(maybeProxied(`${base}/chat/completions`, provider.proxy), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${provider.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+    if (!res.ok) throw new Error(`OpenAI-compatible API ${res.status}`)
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content ?? ''
+  }
+  throw new Error('no real provider configured')
+}
+
+export async function selectFiles(
+  provider: ProviderSettings,
+  issue: { issueId: string; title: string; description?: string; conversation?: string },
+  paths: string[],
+): Promise<string[]> {
+  const prompt = `You are a coding agent planning work on issue ${issue.issueId}: "${issue.title}".${
+    issue.description ? `\nDetails: ${issue.description}` : ''
+  }${issue.conversation ? `\nPrior discussion:\n${issue.conversation}` : ''}
+
+Repository file tree (one path per line):
+${paths.join('\n')}
+
+Which files do you need to READ to implement this issue? Respond with ONLY JSON:
+{"files": ["<exact path copied from the tree>", ...]}
+Choose 3-10 files, most relevant first. Prefer source files you would actually edit or must understand.`
+  const text = await completeText(provider, prompt)
+  const parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1))
+  if (!Array.isArray(parsed.files)) throw new Error('bad selection shape')
+  const valid = new Set(paths)
+  const files = parsed.files
+    .filter((f: unknown): f is string => typeof f === 'string' && valid.has(f))
+    .slice(0, 12)
+  if (files.length === 0) throw new Error('no valid files selected')
+  return files
 }
 
 // ─── Model discovery ────────────────────────────────────────────

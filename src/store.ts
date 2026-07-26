@@ -36,6 +36,10 @@ export interface AgentTask {
   context?: string
   /** Review-page revision requests, in order (task → conversation). */
   revisions?: { instruction: string; time: number }[]
+  /** Delegation template key ('conservative' | 'bold'). */
+  template?: string
+  /** Files that were actually fed to the model (context visibility). */
+  contextFiles?: string[]
   steps: string[]
   summary?: string
   changes?: FileChange[]
@@ -150,6 +154,7 @@ export type Action =
   | { type: 'setLocale'; locale: Locale }
   | { type: 'delegate'; task: AgentTask }
   | { type: 'agentStep'; id: string; step: string }
+  | { type: 'agentContext'; id: string; files: string[] }
   | { type: 'agentStatus'; id: string; status: AgentTaskStatus; summary?: string }
   | { type: 'agentResult'; id: string; summary: string; changes: FileChange[]; baseBranch?: string }
   | { type: 'applyChanges'; id: string }
@@ -387,6 +392,13 @@ export function reducer(state: AppState, action: Action): AppState {
           t.id === action.id ? { ...t, steps: [...t.steps, action.step] } : t,
         ),
       }
+    case 'agentContext':
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id ? { ...t, contextFiles: action.files } : t,
+        ),
+      }
     case 'agentStatus': {
       const task = state.agentTasks.find((t) => t.id === action.id)
       const next = {
@@ -509,6 +521,7 @@ export function reducer(state: AppState, action: Action): AppState {
                 steps: [],
                 summary: undefined,
                 changes: undefined,
+                contextFiles: undefined,
                 finishedAt: undefined,
                 target: githubMode ? ('github' as const) : ('virtual' as const),
                 repo: githubMode ? state.settings.githubRepo : undefined,

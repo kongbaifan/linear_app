@@ -3220,3 +3220,58 @@ body,
   line-height: 1.55;
   color: var(--tok-plain);
 }
+
+/* delegation templates + context visibility */
+.delegate-split {
+  display: flex;
+  gap: 2px;
+  align-items: stretch;
+}
+
+.delegate-split .delegate-btn {
+  flex: 1;
+}
+
+.delegate-caret {
+  padding: 0 var(--s2);
+  display: grid;
+  place-items: center;
+}
+
+.task-context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  padding: var(--s2) var(--s5);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.task-context-label {
+  font-size: var(--fz-xs);
+  color: var(--text-3);
+  margin-right: var(--s1);
+}
+
+.ctx-chip {
+  font-size: var(--fz-xs);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 var(--s2);
+  line-height: 18px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctx-chip.file {
+  font-family: 'SF Mono', ui-monospace, monospace;
+}
+
+.ctx-chip.tpl {
+  color: var(--accent-text);
+  border-color: rgba(94, 106, 210, 0.4);
+}

@@ -3,8 +3,14 @@
 // concrete before/after file changes for diff review.
 import { useEffect, useRef } from 'react'
 import type { Action, AppState, FileChange } from '../store'
-import { pickProvider, simulatedProvider, type AgentEdit } from './provider'
-import { fetchRepoFiles } from './github'
+import {
+  TEMPLATE_INSTRUCTIONS,
+  pickProvider,
+  selectFiles,
+  simulatedProvider,
+  type AgentEdit,
+} from './provider'
+import { fetchFilesByPath, fetchRepoFiles, fetchRepoTree } from './github'
 
 const STEP_DELAY_MS = 1300
 
@@ -60,10 +66,66 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
         let baseBranch: string | undefined
         if (task.target === 'github' && task.repo) {
           dispatch({ type: 'agentStep', id: task.id, step: `Connecting to ${task.repo}…` })
+          const realProvider =
+            state.settings.provider.kind !== 'simulated' && !!state.settings.provider.apiKey
           try {
-            const fetched = await fetchRepoFiles(state.settings.githubToken, task.repo, `${task.title} ${task.description ?? ''}`)
-            codebase = fetched.codebase
-            baseBranch = fetched.baseBranch
+            if (realProvider) {
+              // Two-round retrieval: show the model the tree, let it name
+              // the files it needs, then fetch exactly those.
+              const tree = await fetchRepoTree(state.settings.githubToken, task.repo)
+              baseBranch = tree.baseBranch
+              dispatch({
+                type: 'agentStep',
+                id: task.id,
+                step: `Listed ${tree.paths.length} candidate files in ${task.repo}@${baseBranch}`,
+              })
+              try {
+                const wanted = await selectFiles(
+                  state.settings.provider,
+                  {
+                    issueId: task.issueId,
+                    title: task.title,
+                    description: task.description,
+                    conversation: task.context,
+                  },
+                  tree.paths,
+                )
+                dispatch({
+                  type: 'agentStep',
+                  id: task.id,
+                  step: `Model requested ${wanted.length} files: ${wanted.slice(0, 3).join(', ')}${wanted.length > 3 ? ', …' : ''}`,
+                })
+                codebase = await fetchFilesByPath(
+                  state.settings.githubToken,
+                  task.repo,
+                  baseBranch,
+                  wanted,
+                )
+                if (Object.keys(codebase).length === 0) throw new Error('selected files unreadable')
+              } catch (selErr) {
+                // Selection round failed — degrade honestly to the scan.
+                dispatch({
+                  type: 'agentStep',
+                  id: task.id,
+                  step: `⚠ File selection failed (${selErr instanceof Error ? selErr.message : String(selErr)}) — falling back to relevance scan`,
+                })
+                const fetched = await fetchRepoFiles(
+                  state.settings.githubToken,
+                  task.repo,
+                  `${task.title} ${task.description ?? ''}`,
+                )
+                codebase = fetched.codebase
+                baseBranch = fetched.baseBranch
+              }
+            } else {
+              const fetched = await fetchRepoFiles(
+                state.settings.githubToken,
+                task.repo,
+                `${task.title} ${task.description ?? ''}`,
+              )
+              codebase = fetched.codebase
+              baseBranch = fetched.baseBranch
+            }
             dispatch({
               type: 'agentStep',
               id: task.id,
@@ -80,12 +142,15 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
             return
           }
         }
+        // Context visibility: record exactly what the model gets to see.
+        dispatch({ type: 'agentContext', id: task.id, files: Object.keys(codebase) })
         const lastRevision = task.revisions?.[task.revisions.length - 1]
         const input = {
           issueId: task.issueId,
           title: task.title,
           description: task.description,
           conversation: task.context,
+          guidance: task.template ? TEMPLATE_INSTRUCTIONS[task.template] : undefined,
           revision:
             lastRevision && task.changes?.length
               ? {

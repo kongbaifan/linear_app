@@ -38,6 +38,52 @@ function encodeB64(text: string): string {
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|py|go|rs|swift|kt|java|rb|c|h|cpp|cs|css|scss|md|json|yml|yaml|html|vue|svelte)$/i
 const IGNORE_RE = /(^|\/)(node_modules|dist|build|vendor|\.git)\/|(^|\/)package-lock\.json$|\.min\./
 
+/** List candidate source file paths for agentic file selection. */
+export async function fetchRepoTree(
+  token: string,
+  repo: string,
+): Promise<{ baseBranch: string; paths: string[] }> {
+  const info = await gh(token, `/repos/${repo}`)
+  const baseBranch: string = info.default_branch ?? 'main'
+  const tree = await gh(token, `/repos/${repo}/git/trees/${encodeURIComponent(baseBranch)}?recursive=1`)
+  const paths = (tree.tree ?? [])
+    .filter(
+      (t: { type?: string; path?: string; size?: number }) =>
+        t.type === 'blob' &&
+        typeof t.path === 'string' &&
+        SOURCE_RE.test(t.path) &&
+        !IGNORE_RE.test(t.path) &&
+        (t.size ?? 0) < 60_000,
+    )
+    .map((t: { path: string }) => t.path)
+    .slice(0, 400)
+  if (paths.length === 0) throw new Error('No readable source files found in repo')
+  return { baseBranch, paths }
+}
+
+/** Fetch the contents of specific (agent-selected) files. */
+export async function fetchFilesByPath(
+  token: string,
+  repo: string,
+  baseBranch: string,
+  paths: string[],
+): Promise<Record<string, string>> {
+  const codebase: Record<string, string> = {}
+  let total = 0
+  for (const p of paths) {
+    try {
+      const data = await gh(token, `/repos/${repo}/contents/${encodePath(p)}?ref=${encodeURIComponent(baseBranch)}`)
+      const text = decodeB64(data.content ?? '')
+      total += text.length
+      if (total > 150_000) break
+      codebase[p] = text
+    } catch {
+      // unreadable file (submodule, oversized, deleted) — skip it
+    }
+  }
+  return codebase
+}
+
 /** Pick the most issue-relevant files from the repo and fetch their contents. */
 export async function fetchRepoFiles(
   token: string,

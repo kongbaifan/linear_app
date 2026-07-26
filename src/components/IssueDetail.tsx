@@ -113,7 +113,7 @@ export default function IssueDetail({
   onOpenChat: (id: string) => void
   onUpdate: (patch: Partial<Issue>) => void
   agentTask?: AgentTask
-  onDelegate: (issue: Issue) => void
+  onDelegate: (issue: Issue, template?: string) => void
   onViewAgent: () => void
   onReviewTask: (taskId: string) => void
 }) {
@@ -334,10 +334,26 @@ export default function IssueDetail({
 
           <div className="prop-label">Agent</div>
           {!agentTask && (
-            <button className="btn sm delegate-btn" onClick={() => onDelegate(issue)}>
-              <LinageLogo size={11} />
-              {t('agents.delegate')}
-            </button>
+            <div className="delegate-split">
+              <button className="btn sm delegate-btn" onClick={() => onDelegate(issue)}>
+                <LinageLogo size={11} />
+                {t('agents.delegate')}
+              </button>
+              <Dropdown
+                trigger={() => (
+                  <button className="btn sm delegate-caret" title={t('tpl.header')}>
+                    <ChevronDown size={11} />
+                  </button>
+                )}
+                header={t('tpl.header')}
+                options={[
+                  { key: '', label: t('tpl.default') },
+                  { key: 'conservative', label: t('tpl.conservative') },
+                  { key: 'bold', label: t('tpl.bold') },
+                ]}
+                onSelect={(k) => onDelegate(issue, k || undefined)}
+              />
+            </div>
           )}
           {agentTask && (agentTask.status === 'queued' || agentTask.status === 'working') && (
             <button className="btn sm delegate-btn working" onClick={onViewAgent}>
