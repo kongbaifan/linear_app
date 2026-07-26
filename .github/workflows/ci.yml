@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # package-lock.json 进仓库后可改为 npm ci(更快更可复现)
+      - name: Install dependencies
+        run: npm install
+
+      # tsc 类型检查 + vite 生产构建(package.json 的 build 脚本)
+      - name: Typecheck & build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
