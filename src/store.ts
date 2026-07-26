@@ -94,6 +94,7 @@ export type Action =
   | { type: 'agentResult'; id: string; summary: string; changes: FileChange[]; baseBranch?: string }
   | { type: 'applyChanges'; id: string }
   | { type: 'githubApplied'; id: string; prUrl: string; branch: string }
+  | { type: 'retryTask'; id: string }
   | { type: 'setSettings'; settings: Partial<Omit<AgentSettings, 'provider'>> }
   | { type: 'setProvider'; provider: Partial<ProviderSettings> }
   | { type: 'importState'; data: unknown }
@@ -369,6 +370,31 @@ export function reducer(state: AppState, action: Action): AppState {
               unread: true,
             })
           : state.notifications,
+      }
+    }
+    case 'retryTask': {
+      // Retry re-evaluates the mode from CURRENT settings, so "fix the
+      // config, then retry" works the way users expect.
+      const githubMode = !!(state.settings.githubToken && state.settings.githubRepo)
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id && t.status === 'failed'
+            ? {
+                ...t,
+                status: 'queued' as const,
+                steps: [],
+                summary: undefined,
+                changes: undefined,
+                finishedAt: undefined,
+                target: githubMode ? ('github' as const) : ('virtual' as const),
+                repo: githubMode ? state.settings.githubRepo : undefined,
+                baseBranch: undefined,
+                branch: undefined,
+                prUrl: undefined,
+              }
+            : t,
+        ),
       }
     }
     case 'setSettings':

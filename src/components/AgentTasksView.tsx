@@ -39,6 +39,7 @@ export default function AgentTasksView({
   onOpenIssue,
   onOpenTask,
   onApprove,
+  onRetry,
   onOpenSettings,
 }: {
   tasks: AgentTask[]
@@ -46,6 +47,7 @@ export default function AgentTasksView({
   onOpenIssue: (id: string) => void
   onOpenTask: (id: string) => void
   onApprove: (id: string) => void
+  onRetry: (id: string) => void
   onOpenSettings: () => void
 }) {
   const { t } = useI18n()
@@ -115,6 +117,17 @@ export default function AgentTasksView({
                   >
                     PR ↗
                   </a>
+                )}
+                {task.status === 'failed' && (
+                  <button
+                    className="btn sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRetry(task.id)
+                    }}
+                  >
+                    ↻ {t('agents.retry')}
+                  </button>
                 )}
                 {task.status === 'needsReview' && (
                   <>

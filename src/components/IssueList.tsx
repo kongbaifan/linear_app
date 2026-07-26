@@ -34,6 +34,7 @@ export default function IssueList({
   onMove,
   board = false,
   onToggleBoard,
+  onNewInStatus,
 }: {
   issues: Issue[]
   selectedId: string | null
@@ -42,6 +43,7 @@ export default function IssueList({
   onMove: (dragId: string, status: StatusKey, beforeId?: string) => void
   board?: boolean
   onToggleBoard?: (board: boolean) => void
+  onNewInStatus: (status: StatusKey) => void
 }) {
   const { t } = useI18n()
   const [dragId, setDragId] = useState<string | null>(null)
@@ -73,12 +75,13 @@ export default function IssueList({
         <button className="filter-btn">{t('list.filter')}</button>
       </div>
       {board ? (
-        <BoardView issues={issues} onOpen={onOpen} onMove={onMove} />
+        <BoardView issues={issues} onOpen={onOpen} onMove={onMove} onNewInStatus={onNewInStatus} />
       ) : (
       <div className="issue-groups">
         {groupOrder.map((status) => {
           const group = issues.filter((i) => i.status === status)
           const meta = statusMeta[status]
+          if (group.length === 0 && !dragId) return null
           return (
             <section
               key={status}

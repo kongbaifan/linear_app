@@ -320,3 +320,10 @@ export const Gear = ({ size = 14 }: P) => (
     />
   </S>
 )
+
+export const Board = ({ size = 14 }: P) => (
+  <S size={size}>
+    <rect x="2" y="2.5" width="5" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+    <rect x="9" y="2.5" width="5" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+  </S>
+)

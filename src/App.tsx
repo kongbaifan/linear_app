@@ -10,7 +10,7 @@ import AgentTasksView from './components/AgentTasksView'
 import TaskDiffView from './components/TaskDiffView'
 import SettingsView from './components/SettingsView'
 import { useAgentEngine } from './agent/engine'
-import type { Issue } from './data/mock'
+import type { Issue, StatusKey } from './data/mock'
 import { statusOrder } from './components/meta'
 import { useHashRoute, type View } from './router'
 import { nextIssueId, serializeState, useAppStore, type AgentTask } from './store'
@@ -24,6 +24,7 @@ export default function App() {
   const [view, navigate] = useHashRoute()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [modalStatus, setModalStatus] = useState<StatusKey>('todo')
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
   const installPrompt = useRef<any>(null)
 
@@ -50,7 +51,8 @@ export default function App() {
   const addIssue = (partial: Omit<Issue, 'id' | 'createdAt'>) => {
     const issue: Issue = { ...partial, id: nextIssueId(allIssues), createdAt: Date.now() }
     dispatch({ type: 'addIssue', issue })
-    navigate({ type: 'list' })
+    // Stay in the current list mode (board keeps its context).
+    navigate({ type: 'list', board: view.type === 'list' ? view.board : false })
     setSelectedId(issue.id)
   }
 
@@ -74,6 +76,7 @@ export default function App() {
 
       if (e.key === 'c') {
         e.preventDefault()
+        setModalStatus('todo')
         setModalOpen(true)
         return
       }
@@ -192,6 +195,10 @@ export default function App() {
             }
             board={!!view.board}
             onToggleBoard={(board) => navigate({ type: 'list', board })}
+            onNewInStatus={(status) => {
+              setModalStatus(status)
+              setModalOpen(true)
+            }}
           />
         )}
         {view.type === 'issue' && (() => {
@@ -222,6 +229,7 @@ export default function App() {
               const task = state.agentTasks.find((a) => a.id === id)
               if (task) approveTask(task)
             }}
+            onRetry={(id) => dispatch({ type: 'retryTask', id })}
             onOpenSettings={() => navigate({ type: 'settings' })}
           />
         )}
@@ -256,6 +264,7 @@ export default function App() {
               const task = state.agentTasks.find((a) => a.id === id)
               if (task) approveTask(task)
             }}
+            onRetry={(id) => dispatch({ type: 'retryTask', id })}
             onOpenSettings={() => navigate({ type: 'settings' })}
           />
         )}
@@ -316,6 +325,7 @@ export default function App() {
           }}
           onCreate={() => {
             setPaletteOpen(false)
+            setModalStatus('todo')
             setModalOpen(true)
           }}
           onToggleTheme={() => {
@@ -335,6 +345,7 @@ export default function App() {
       {modalOpen && (
         <NewIssueModal
           projects={state.projects}
+          initialStatus={modalStatus}
           onClose={() => setModalOpen(false)}
           onCreate={(p) => { addIssue(p); setModalOpen(false) }}
         />

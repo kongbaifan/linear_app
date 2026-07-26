@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ExecutorKey, Issue, PriorityKey, Project, StatusKey } from '../data/mock'
 import type { AgentTask } from '../store'
 import { Avatar, BotAvatar } from './Avatar'
@@ -25,7 +26,8 @@ const executorLabel: Record<ExecutorKey, MessageKey> = {
 
 interface ActivityEvent {
   icon: React.ReactNode
-  textKey: MessageKey
+  textKey?: MessageKey
+  noteText?: string
   extra?: string
   time: number
   taskId?: string
@@ -39,6 +41,9 @@ function buildActivity(issue: Issue, tasks: AgentTask[]): ActivityEvent[] {
       time: issue.createdAt,
     },
   ]
+  for (const note of issue.notes ?? []) {
+    events.push({ icon: <Avatar user="me" size="sm" />, noteText: note.text, time: note.time })
+  }
   for (const task of [...tasks].reverse()) {
     events.push({
       icon: <BotAvatar size="sm" />,
@@ -98,7 +103,17 @@ export default function IssueDetail({
   onReviewTask: (taskId: string) => void
 }) {
   const { t, locale } = useI18n()
+  const [note, setNote] = useState('')
   const activity = buildActivity(issue, issueTasks)
+
+  const submitNote = () => {
+    const text = note.trim()
+    if (!text) return
+    onUpdate({
+      notes: [...(issue.notes ?? []), { id: `note-${Date.now()}`, text, time: Date.now() }],
+    })
+    setNote('')
+  }
   const fmtTime = (ts: number) =>
     new Date(ts).toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-US', {
       month: 'short',
@@ -149,7 +164,7 @@ export default function IssueDetail({
                 <div key={i} className="activity-event">
                   <span className="event-icon">{ev.icon}</span>
                   <span className="event-text">
-                    {t(ev.textKey)}
+                    {ev.noteText ? <b>{ev.noteText}</b> : t(ev.textKey!)}
                     {ev.extra && ev.textKey === 'activity.delegated' && (
                       <span className="model-badge" style={{ marginLeft: 6 }}>
                         {ev.extra}
@@ -182,13 +197,19 @@ export default function IssueDetail({
               ))}
             </div>
 
-            <div className="composer">
-              <span>{t('issue.leaveComment')}</span>
+            <div className="composer slim">
+              <input
+                className="composer-input"
+                placeholder={t('issue.leaveComment')}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitNote()}
+              />
               <span className="composer-actions">
-                <button className="icon-btn">
+                <button className="icon-btn" title="attach">
                   <Paperclip size={13} />
                 </button>
-                <button className="send-btn">
+                <button className="send-btn" onClick={submitNote}>
                   <ArrowUp size={12} />
                 </button>
               </span>

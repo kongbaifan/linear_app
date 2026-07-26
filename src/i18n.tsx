@@ -46,7 +46,7 @@ const en = {
 
   // issue detail
   'issue.activity': 'Activity',
-  'issue.leaveComment': 'Leave a comment…',
+  'issue.leaveComment': 'Add a note…',
   'issue.labels': 'Labels',
   'issue.createdVia': 'Created via',
   'issue.unassigned': 'Unassigned',
@@ -199,6 +199,9 @@ const en = {
   'projects.localDesc': 'Lightweight groups for your issues, with progress tracked automatically.',
   'projects.namePlaceholder': 'New project name…',
   'projects.localEmpty': 'No projects yet.',
+  'board.newHere': 'New issue in this column',
+  'agents.retry': 'Retry',
+  'activity.note': 'Note',
 }
 
 export type MessageKey = keyof typeof en
@@ -239,7 +242,7 @@ const zh: Record<MessageKey, string> = {
   'board.dropHere': '拖拽事项到此处',
 
   'issue.activity': '活动',
-  'issue.leaveComment': '写下评论…',
+  'issue.leaveComment': '记一条笔记…',
   'issue.labels': '标签',
   'issue.createdVia': '创建来源',
   'issue.unassigned': '未指派',
@@ -356,7 +359,7 @@ const zh: Record<MessageKey, string> = {
   'user.changelog': '更新日志',
   'user.learnMore': '了解更多',
   'user.logout': '退出登录',
-  'nav.firstSample': '示例:优化启动速度',
+  'nav.firstSample': '示例：优化启动速度',
   'issue.sample': '示例',
   'issue.noDescription': '还没有描述。',
   'issue.executor': '执行者',
@@ -385,6 +388,9 @@ const zh: Record<MessageKey, string> = {
   'projects.localDesc': '给事项做轻量分组，进度自动统计。',
   'projects.namePlaceholder': '新项目名称…',
   'projects.localEmpty': '还没有项目。',
+  'board.newHere': '在此列新建事项',
+  'agents.retry': '重试',
+  'activity.note': '笔记',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }

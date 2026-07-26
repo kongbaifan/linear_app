@@ -14,8 +14,15 @@ export interface Issue {
   executor: ExecutorKey
   project?: string
   description?: string
+  notes?: IssueNote[]
   createdAt: number
   sample?: boolean
+}
+
+export interface IssueNote {
+  id: string
+  text: string
+  time: number
 }
 
 export interface Project {
@@ -49,20 +56,20 @@ export function sampleIssues(): Issue[] {
   return [
     {
       id: 'LIN-1',
-      title: '示例:优化 App 启动速度',
+      title: '示例：优化 App 启动速度',
       status: 'todo',
       priority: 'high',
       labels: [{ name: '性能', color: '#4ea7fc' }],
       executor: 'agent',
       project: SAMPLE_PROJECT_ID,
       description:
-        '内置虚拟代码库里的 AppBoot.swift 在启动时阻塞等待完整状态同步。试试点右侧"委派给 Agent",看它如何改成最小状态先渲染、后台补全同步，然后审查它产出的 diff。',
+        '内置虚拟代码库里的 AppBoot.swift 在启动时阻塞等待完整状态同步。试试点右侧「委派给 Agent」,看它如何改成最小状态先渲染、后台补全同步，然后审查它产出的 diff。',
       createdAt: now - 3600_000,
       sample: true,
     },
     {
       id: 'LIN-2',
-      title: '示例:修复行程卡片透明度 Bug',
+      title: '示例：修复行程卡片透明度 Bug',
       status: 'todo',
       priority: 'medium',
       labels: [{ name: 'Bug', color: '#eb5757' }],
@@ -74,7 +81,7 @@ export function sampleIssues(): Issue[] {
     },
     {
       id: 'LIN-3',
-      title: '示例:接入你的 GitHub 仓库和 AI 服务',
+      title: '示例：接入你的 GitHub 仓库和 AI 服务',
       status: 'todo',
       priority: 'low',
       labels: [{ name: '上手', color: '#26b5ce' }],

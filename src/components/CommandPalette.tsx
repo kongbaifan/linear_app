@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { View } from '../App'
 import type { Issue } from '../data/mock'
 import { statusMeta } from './meta'
-import { Compose, Inbox, Moon, MyIssues, Projects, Reviews, Search, Sun, UIRefresh } from './Icons'
+import { AgentTasks, Board, Compose, Gear, Inbox, Moon, MyIssues, Projects, Reviews, Search, Sun, UIRefresh } from './Icons'
 import { useI18n } from '../i18n'
 
 interface Item {
@@ -69,7 +69,7 @@ export default function CommandPalette({
         key: 'settings',
         section: t('palette.navigation'),
         label: t('palette.goSettings'),
-        icon: <Search size={14} />,
+        icon: <Gear size={14} />,
         run: () => onNavigate({ type: 'settings' }),
       },
       {
@@ -90,7 +90,7 @@ export default function CommandPalette({
         key: 'nav-board',
         section: t('palette.navigation'),
         label: t('palette.goBoard'),
-        icon: <MyIssues size={14} />,
+        icon: <Board size={14} />,
         run: () => onNavigate({ type: 'list', board: true }),
       },
       {
@@ -111,7 +111,7 @@ export default function CommandPalette({
         key: 'nav-agents',
         section: t('palette.navigation'),
         label: t('palette.goAgents'),
-        icon: <Compose size={14} />,
+        icon: <AgentTasks size={14} />,
         run: () => onNavigate({ type: 'agents' }),
       },
       {

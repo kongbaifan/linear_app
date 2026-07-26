@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { Issue, StatusKey } from '../data/mock'
 import { Avatar } from './Avatar'
 import { priorityMeta, statusMeta } from './meta'
-import { Dots } from './Icons'
 import { useI18n } from '../i18n'
 
 const columns: StatusKey[] = ['inProgress', 'todo', 'done']
@@ -11,10 +10,12 @@ export default function BoardView({
   issues,
   onOpen,
   onMove,
+  onNewInStatus,
 }: {
   issues: Issue[]
   onOpen: (id: string) => void
   onMove: (dragId: string, status: StatusKey, beforeId?: string) => void
+  onNewInStatus: (status: StatusKey) => void
 }) {
   const { t } = useI18n()
   const [dragId, setDragId] = useState<string | null>(null)
@@ -52,13 +53,14 @@ export default function BoardView({
               <span className="board-col-title">{t(`status.${status}`)}</span>
               <span className="group-count">{group.length}</span>
               <span className="board-col-actions">
-                <button className="icon-btn">
+                <button
+                  className="icon-btn"
+                  title={t('board.newHere')}
+                  onClick={() => onNewInStatus(status)}
+                >
                   <svg width="12" height="12" viewBox="0 0 12 12">
                     <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                   </svg>
-                </button>
-                <button className="icon-btn">
-                  <Dots size={12} />
                 </button>
               </span>
             </div>

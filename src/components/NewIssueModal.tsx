@@ -13,17 +13,19 @@ const executorLabel: Record<ExecutorKey, MessageKey> = {
 
 export default function NewIssueModal({
   projects,
+  initialStatus = 'todo',
   onClose,
   onCreate,
 }: {
   projects: Project[]
+  initialStatus?: StatusKey
   onClose: () => void
   onCreate: (issue: Omit<Issue, 'id' | 'createdAt'>) => void
 }) {
   const { t } = useI18n()
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
-  const [status, setStatus] = useState<StatusKey>('todo')
+  const [status, setStatus] = useState<StatusKey>(initialStatus)
   const [priority, setPriority] = useState<PriorityKey>('medium')
   const [executor, setExecutor] = useState<ExecutorKey>('me')
   const [project, setProject] = useState<string | undefined>(undefined)
