@@ -162,6 +162,14 @@ const en = {
   'settings.about': 'About',
   'settings.aboutDesc': 'a Linear-quality personal AI coding workbench.',
   'palette.goSettings': 'Open Settings',
+  'user.usage': 'Usage',
+  'user.getHelp': 'Get help',
+  'user.feedback': 'Give feedback',
+  'user.plans': 'View all plans',
+  'user.apps': 'Get apps and extensions',
+  'user.changelog': 'View changelog',
+  'user.learnMore': 'Learn more',
+  'user.logout': 'Log out',
 }
 
 export type MessageKey = keyof typeof en
@@ -311,6 +319,14 @@ const zh: Record<MessageKey, string> = {
   'settings.about': '关于',
   'settings.aboutDesc': 'Linear 品质的个人 AI 编程工作台。',
   'palette.goSettings': '打开设置',
+  'user.usage': '用量',
+  'user.getHelp': '获取帮助',
+  'user.feedback': '反馈建议',
+  'user.plans': '查看所有方案',
+  'user.apps': '获取应用与扩展',
+  'user.changelog': '更新日志',
+  'user.learnMore': '了解更多',
+  'user.logout': '退出登录',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }

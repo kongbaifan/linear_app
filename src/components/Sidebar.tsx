@@ -1,10 +1,11 @@
+import { useEffect, useRef, useState } from 'react'
 import type { View } from '../App'
-import { useI18n, type Locale } from '../i18n'
+import { useI18n, type Locale, type MessageKey } from '../i18n'
 import {
   AgentTasks,
-  Gear,
   ChevronDown,
   Compose,
+  Gear,
   Inbox,
   Initiatives,
   Insights,
@@ -21,6 +22,137 @@ import {
   UIRefresh,
 } from './Icons'
 
+const REPO_URL = 'https://github.com/kongbaifan/linear_app'
+
+function UserMenu({
+  locale,
+  onNavigate,
+  onSetLocale,
+  onInstallApp,
+}: {
+  locale: Locale
+  onNavigate: (v: View) => void
+  onSetLocale: (l: Locale) => void
+  onInstallApp: () => void
+}) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey, true)
+    }
+  }, [open])
+
+  const close = () => {
+    setOpen(false)
+    setLangOpen(false)
+  }
+
+  const link = (url: string) => () => {
+    window.open(url, '_blank')
+    close()
+  }
+
+  const Item = ({
+    label,
+    kbd,
+    onClick,
+    chevron,
+  }: {
+    label: string
+    kbd?: string
+    onClick: () => void
+    chevron?: boolean
+  }) => (
+    <button className="menu-item" onClick={onClick}>
+      <span className="menu-item-label">{label}</span>
+      {kbd && <span className="kbd">{kbd}</span>}
+      {chevron && <span style={{ color: 'var(--text-3)' }}>›</span>}
+    </button>
+  )
+
+  return (
+    <div className="sidebar-footer" ref={ref}>
+      {open && (
+        <div className="menu user-menu">
+          <Item
+            label={t('settings.title')}
+            kbd="Ctrl+,"
+            onClick={() => {
+              close()
+              onNavigate({ type: 'settings' })
+            }}
+          />
+          <Item
+            label={t('user.usage')}
+            onClick={() => {
+              close()
+              onNavigate({ type: 'settings' })
+            }}
+          />
+          <Item label={t('action.language')} chevron onClick={() => setLangOpen((o) => !o)} />
+          {langOpen && (
+            <div className="user-menu-sub">
+              {(['en', 'zh'] as const).map((l) => (
+                <button
+                  key={l}
+                  className="menu-item"
+                  onClick={() => {
+                    onSetLocale(l)
+                    close()
+                  }}
+                >
+                  <span className="menu-item-label">{l === 'en' ? 'English' : '中文'}</span>
+                  {locale === l && <span className="menu-item-check">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          <Item label={t('user.getHelp')} onClick={link(`${REPO_URL}#readme`)} />
+          <Item label={t('user.feedback')} onClick={link(`${REPO_URL}/issues/new`)} />
+          <div className="menu-divider" />
+          <Item label={t('user.plans')} onClick={link('https://linage-orpin.vercel.app')} />
+          <Item
+            label={t('user.apps')}
+            onClick={() => {
+              close()
+              onInstallApp()
+            }}
+          />
+          <Item label={t('user.changelog')} onClick={link(`${REPO_URL}/commits/main`)} />
+          <Item label={t('user.learnMore' as MessageKey)} chevron onClick={link(REPO_URL)} />
+          <div className="menu-divider" />
+          <Item label={t('user.logout')} onClick={close} />
+        </div>
+      )}
+      <button className="user-row" onClick={() => setOpen((o) => !o)}>
+        <span className="avatar" style={{ background: 'var(--accent)' }}>
+          K
+        </span>
+        <span className="user-row-name">kung</span>
+        <span className="user-row-plan">· Linage</span>
+        <ChevronDown size={11} />
+      </button>
+    </div>
+  )
+}
+
 export default function Sidebar({
   view,
   onNavigate,
@@ -28,6 +160,8 @@ export default function Sidebar({
   onToggleTheme,
   locale,
   onToggleLocale,
+  onSetLocale,
+  onInstallApp,
 }: {
   view: View
   onNavigate: (v: View) => void
@@ -35,6 +169,8 @@ export default function Sidebar({
   onToggleTheme: () => void
   locale: Locale
   onToggleLocale: () => void
+  onSetLocale: (l: Locale) => void
+  onInstallApp: () => void
 }) {
   const { t } = useI18n()
   const isIssue = view.type === 'issue'
@@ -140,6 +276,13 @@ export default function Sidebar({
           {t('nav.agentsInsights')}
         </button>
       </div>
+
+      <UserMenu
+        locale={locale}
+        onNavigate={onNavigate}
+        onSetLocale={onSetLocale}
+        onInstallApp={onInstallApp}
+      />
     </aside>
   )
 }

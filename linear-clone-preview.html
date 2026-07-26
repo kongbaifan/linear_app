@@ -2327,6 +2327,62 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
   opacity: .45;
   cursor: default;
 }
+
+.sidebar-footer {
+  position: relative;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.user-row {
+  display: flex;
+  text-align: left;
+  border-radius: 7px;
+  align-items:  center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.user-row:hover {
+  background: var(--bg-hover);
+}
+
+.user-row-name {
+  font-weight: 550;
+}
+
+.user-row-plan {
+  color: var(--text-3);
+  flex: 1;
+  font-size: 12px;
+}
+
+.user-menu {
+  position: absolute;
+  z-index: 70;
+  width: 232px;
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 0;
+}
+
+.user-menu .menu-item {
+  padding: 6px 10px;
+}
+
+.user-menu-sub {
+  border-left: 2px solid var(--border);
+  margin: 2px 0 2px 12px;
+  padding-left: 4px;
+}
+
+.menu-divider {
+  background: var(--border-subtle);
+  height: 1px;
+  margin: 5px 4px;
+}
 </style></head><body><div id="root"></div><script type="module">var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
@@ -19443,11 +19499,14 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
   }
 });
 // src/main.tsx
-var import_react16 = __toESM(require_react(), 1);
+var import_react17 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
 // src/App.tsx
-var import_react15 = __toESM(require_react(), 1);
+var import_react16 = __toESM(require_react(), 1);
+
+// src/components/Sidebar.tsx
+var import_react2 = __toESM(require_react(), 1);
 
 // src/i18n.tsx
 var import_react = __toESM(require_react(), 1);
@@ -19586,7 +19645,15 @@ var en = {
   "settings.testFail": "Connection failed",
   "settings.about": "About",
   "settings.aboutDesc": "a Linear-quality personal AI coding workbench.",
-  "palette.goSettings": "Open Settings"
+  "palette.goSettings": "Open Settings",
+  "user.usage": "Usage",
+  "user.getHelp": "Get help",
+  "user.feedback": "Give feedback",
+  "user.plans": "View all plans",
+  "user.apps": "Get apps and extensions",
+  "user.changelog": "View changelog",
+  "user.learnMore": "Learn more",
+  "user.logout": "Log out"
 };
 var zh = {
   "nav.inbox": "收件箱",
@@ -19722,7 +19789,15 @@ var zh = {
   "settings.testFail": "连接失败",
   "settings.about": "关于",
   "settings.aboutDesc": "Linear 品质的个人 AI 编程工作台。",
-  "palette.goSettings": "打开设置"
+  "palette.goSettings": "打开设置",
+  "user.usage": "用量",
+  "user.getHelp": "获取帮助",
+  "user.feedback": "反馈建议",
+  "user.plans": "查看所有方案",
+  "user.apps": "获取应用与扩展",
+  "user.changelog": "更新日志",
+  "user.learnMore": "了解更多",
+  "user.logout": "退出登录"
 };
 var dictionaries = { en, zh };
 function translate(locale, key) {
@@ -20455,13 +20530,189 @@ var Gear = ({ size = 14 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
 
 // src/components/Sidebar.tsx
 var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
+var REPO_URL = "https://github.com/kongbaifan/linear_app";
+function UserMenu({
+  locale,
+  onNavigate,
+  onSetLocale,
+  onInstallApp
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = import_react2.useState(false);
+  const [langOpen, setLangOpen] = import_react2.useState(false);
+  const ref = import_react2.useRef(null);
+  import_react2.useEffect(() => {
+    if (!open)
+      return;
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target))
+        setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [open]);
+  const close = () => {
+    setOpen(false);
+    setLangOpen(false);
+  };
+  const link = (url) => () => {
+    window.open(url, "_blank");
+    close();
+  };
+  const Item = ({
+    label,
+    kbd,
+    onClick,
+    chevron
+  }) => /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+    className: "menu-item",
+    onClick,
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+        className: "menu-item-label",
+        children: label
+      }, undefined, false, undefined, this),
+      kbd && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+        className: "kbd",
+        children: kbd
+      }, undefined, false, undefined, this),
+      chevron && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+        style: { color: "var(--text-3)" },
+        children: "›"
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+  return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+    className: "sidebar-footer",
+    ref,
+    children: [
+      open && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+        className: "menu user-menu",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("settings.title"),
+            kbd: "Ctrl+,",
+            onClick: () => {
+              close();
+              onNavigate({ type: "settings" });
+            }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.usage"),
+            onClick: () => {
+              close();
+              onNavigate({ type: "settings" });
+            }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("action.language"),
+            chevron: true,
+            onClick: () => setLangOpen((o) => !o)
+          }, undefined, false, undefined, this),
+          langOpen && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+            className: "user-menu-sub",
+            children: ["en", "zh"].map((l) => /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+              className: "menu-item",
+              onClick: () => {
+                onSetLocale(l);
+                close();
+              },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+                  className: "menu-item-label",
+                  children: l === "en" ? "English" : "中文"
+                }, undefined, false, undefined, this),
+                locale === l && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+                  className: "menu-item-check",
+                  children: "✓"
+                }, undefined, false, undefined, this)
+              ]
+            }, l, true, undefined, this))
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.getHelp"),
+            onClick: link(`${REPO_URL}#readme`)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.feedback"),
+            onClick: link(`${REPO_URL}/issues/new`)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+            className: "menu-divider"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.plans"),
+            onClick: link("https://linage-orpin.vercel.app")
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.apps"),
+            onClick: () => {
+              close();
+              onInstallApp();
+            }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.changelog"),
+            onClick: link(`${REPO_URL}/commits/main`)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.learnMore"),
+            chevron: true,
+            onClick: link(REPO_URL)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+            className: "menu-divider"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
+            label: t("user.logout"),
+            onClick: close
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+        className: "user-row",
+        onClick: () => setOpen((o) => !o),
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+            className: "avatar",
+            style: { background: "var(--accent)" },
+            children: "K"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+            className: "user-row-name",
+            children: "kung"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+            className: "user-row-plan",
+            children: "· Linage"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(ChevronDown, {
+            size: 11
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
 function Sidebar({
   view,
   onNavigate,
   theme,
   onToggleTheme,
   locale,
-  onToggleLocale
+  onToggleLocale,
+  onSetLocale,
+  onInstallApp
 }) {
   const { t } = useI18n();
   const isIssue = view.type === "issue";
@@ -20661,13 +20912,19 @@ function Sidebar({
             ]
           }, undefined, true, undefined, this)
         ]
-      }, undefined, true, undefined, this)
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(UserMenu, {
+        locale,
+        onNavigate,
+        onSetLocale,
+        onInstallApp
+      }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
 
 // src/components/IssueList.tsx
-var import_react3 = __toESM(require_react(), 1);
+var import_react4 = __toESM(require_react(), 1);
 
 // src/data/mock.ts
 var users = {
@@ -21055,7 +21312,7 @@ function BotAvatar({ size = "md" }) {
 }
 
 // src/components/BoardView.tsx
-var import_react2 = __toESM(require_react(), 1);
+var import_react3 = __toESM(require_react(), 1);
 
 // src/components/meta.tsx
 var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
@@ -21107,9 +21364,9 @@ function BoardView({
   onMove
 }) {
   const { t } = useI18n();
-  const [dragId, setDragId] = import_react2.useState(null);
-  const [dropCol, setDropCol] = import_react2.useState(null);
-  const [dropBefore, setDropBefore] = import_react2.useState(null);
+  const [dragId, setDragId] = import_react3.useState(null);
+  const [dropCol, setDropCol] = import_react3.useState(null);
+  const [dropBefore, setDropBefore] = import_react3.useState(null);
   const clear = () => {
     setDragId(null);
     setDropCol(null);
@@ -21310,9 +21567,9 @@ function IssueList({
   onToggleBoard
 }) {
   const { t } = useI18n();
-  const [dragId, setDragId] = import_react3.useState(null);
-  const [dropBefore, setDropBefore] = import_react3.useState(null);
-  const [dropGroup, setDropGroup] = import_react3.useState(null);
+  const [dragId, setDragId] = import_react4.useState(null);
+  const [dropBefore, setDropBefore] = import_react4.useState(null);
+  const [dropGroup, setDropGroup] = import_react4.useState(null);
   const clearDrag = () => {
     setDragId(null);
     setDropBefore(null);
@@ -21494,7 +21751,7 @@ function IssueList({
 }
 
 // src/components/Dropdown.tsx
-var import_react4 = __toESM(require_react(), 1);
+var import_react5 = __toESM(require_react(), 1);
 var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
 function Dropdown({
   trigger,
@@ -21503,9 +21760,9 @@ function Dropdown({
   header,
   closeOnSelect = true
 }) {
-  const [open, setOpen] = import_react4.useState(false);
-  const ref = import_react4.useRef(null);
-  import_react4.useEffect(() => {
+  const [open, setOpen] = import_react5.useState(false);
+  const ref = import_react5.useRef(null);
+  import_react5.useEffect(() => {
     if (!open)
       return;
     const onDown = (e) => {
@@ -22096,13 +22353,13 @@ function IssueDetail({
 }
 
 // src/components/DiffView.tsx
-var import_react6 = __toESM(require_react(), 1);
+var import_react7 = __toESM(require_react(), 1);
 
 // src/components/AgentPanel.tsx
-var import_react5 = __toESM(require_react(), 1);
+var import_react6 = __toESM(require_react(), 1);
 var jsx_dev_runtime10 = __toESM(require_jsx_dev_runtime(), 1);
 function WorkedFor({ label, steps }) {
-  const [open, setOpen] = import_react5.useState(false);
+  const [open, setOpen] = import_react6.useState(false);
   return /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
     className: "agent-worked",
     children: [
@@ -22141,7 +22398,7 @@ function TypingDots() {
 }
 function AgentInput({ onSend }) {
   const { t } = useI18n();
-  const [value, setValue] = import_react5.useState("");
+  const [value, setValue] = import_react6.useState("");
   const submit = () => {
     if (!value.trim() || !onSend)
       return;
@@ -22321,12 +22578,12 @@ function ChangesSummary() {
 }
 function FloatingAgentPanel({ onOpenDiff }) {
   const { t } = useI18n();
-  const [visible, setVisible] = import_react5.useState(true);
-  const [minimized, setMinimized] = import_react5.useState(false);
-  const [expanded, setExpanded] = import_react5.useState(false);
-  const [chat, setChat] = import_react5.useState([]);
-  const [thinking, setThinking] = import_react5.useState(false);
-  const bodyRef = import_react5.useRef(null);
+  const [visible, setVisible] = import_react6.useState(true);
+  const [minimized, setMinimized] = import_react6.useState(false);
+  const [expanded, setExpanded] = import_react6.useState(false);
+  const [chat, setChat] = import_react6.useState([]);
+  const [thinking, setThinking] = import_react6.useState(false);
+  const bodyRef = import_react6.useRef(null);
   const send = (text) => {
     setChat((c) => [...c, { from: "user", text }]);
     setThinking(true);
@@ -22341,7 +22598,7 @@ function FloatingAgentPanel({ onOpenDiff }) {
       ]);
     }, 1400);
   };
-  import_react5.useEffect(() => {
+  import_react6.useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
   }, [chat, thinking]);
   if (!visible)
@@ -22665,7 +22922,7 @@ function DiffFileCard({ file, thread }) {
 }
 function DiffView({ onBack }) {
   const { t } = useI18n();
-  const [tab, setTab] = import_react6.useState("diff");
+  const [tab, setTab] = import_react7.useState("diff");
   return /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(jsx_dev_runtime11.Fragment, {
     children: [
       /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("header", {
@@ -23053,7 +23310,7 @@ function ProjectsView() {
 }
 
 // src/components/CommandPalette.tsx
-var import_react7 = __toESM(require_react(), 1);
+var import_react8 = __toESM(require_react(), 1);
 var jsx_dev_runtime14 = __toESM(require_jsx_dev_runtime(), 1);
 function CommandPalette({
   issues: issues2,
@@ -23066,12 +23323,12 @@ function CommandPalette({
   onReset
 }) {
   const { t } = useI18n();
-  const [query, setQuery] = import_react7.useState("");
-  const [active, setActive] = import_react7.useState(0);
-  const inputRef = import_react7.useRef(null);
-  const listRef = import_react7.useRef(null);
-  import_react7.useEffect(() => inputRef.current?.focus(), []);
-  const items = import_react7.useMemo(() => {
+  const [query, setQuery] = import_react8.useState("");
+  const [active, setActive] = import_react8.useState(0);
+  const inputRef = import_react8.useRef(null);
+  const listRef = import_react8.useRef(null);
+  import_react8.useEffect(() => inputRef.current?.focus(), []);
+  const items = import_react8.useMemo(() => {
     const base = [
       {
         key: "create",
@@ -23190,8 +23447,8 @@ function CommandPalette({
       return base;
     return base.filter((it) => `${it.label} ${it.hint ?? ""}`.toLowerCase().includes(q));
   }, [issues2, query, theme, t, onCreate, onNavigate, onToggleTheme, onToggleLocale, onReset]);
-  import_react7.useEffect(() => setActive(0), [query]);
-  import_react7.useEffect(() => {
+  import_react8.useEffect(() => setActive(0), [query]);
+  import_react8.useEffect(() => {
     listRef.current?.querySelectorAll(".palette-item")[active]?.scrollIntoView({ block: "nearest" });
   }, [active]);
   const onKeyDown = (e) => {
@@ -23282,22 +23539,22 @@ function CommandPalette({
 }
 
 // src/components/NewIssueModal.tsx
-var import_react8 = __toESM(require_react(), 1);
+var import_react9 = __toESM(require_react(), 1);
 var jsx_dev_runtime15 = __toESM(require_jsx_dev_runtime(), 1);
 function NewIssueModal({
   onClose,
   onCreate
 }) {
   const { t } = useI18n();
-  const [title, setTitle] = import_react8.useState("");
-  const [desc, setDesc] = import_react8.useState("");
-  const [status, setStatus] = import_react8.useState("todo");
-  const [priority, setPriority] = import_react8.useState("medium");
-  const [assignee, setAssignee] = import_react8.useState(undefined);
-  const [labels, setLabels] = import_react8.useState([]);
-  const titleRef = import_react8.useRef(null);
-  import_react8.useEffect(() => titleRef.current?.focus(), []);
-  import_react8.useEffect(() => {
+  const [title, setTitle] = import_react9.useState("");
+  const [desc, setDesc] = import_react9.useState("");
+  const [status, setStatus] = import_react9.useState("todo");
+  const [priority, setPriority] = import_react9.useState("medium");
+  const [assignee, setAssignee] = import_react9.useState(undefined);
+  const [labels, setLabels] = import_react9.useState([]);
+  const titleRef = import_react9.useRef(null);
+  import_react9.useEffect(() => titleRef.current?.focus(), []);
+  import_react9.useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape")
         onClose();
@@ -23458,7 +23715,7 @@ function NewIssueModal({
 }
 
 // src/components/AgentTasksView.tsx
-var import_react9 = __toESM(require_react(), 1);
+var import_react10 = __toESM(require_react(), 1);
 var jsx_dev_runtime16 = __toESM(require_jsx_dev_runtime(), 1);
 var statusKey = {
   queued: "agents.status.queued",
@@ -23496,7 +23753,7 @@ function AgentTasksView({
   onOpenSettings
 }) {
   const { t } = useI18n();
-  const [expanded, setExpanded] = import_react9.useState(null);
+  const [expanded, setExpanded] = import_react10.useState(null);
   return /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(jsx_dev_runtime16.Fragment, {
     children: [
       /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("header", {
@@ -23648,7 +23905,7 @@ function AgentTasksView({
 }
 
 // src/components/TaskDiffView.tsx
-var import_react10 = __toESM(require_react(), 1);
+var import_react11 = __toESM(require_react(), 1);
 
 // src/agent/diff.ts
 function escapeHtml(s) {
@@ -23822,7 +24079,7 @@ function TaskDiffView({
   onOpenIssue
 }) {
   const { t } = useI18n();
-  const files = import_react10.useMemo(() => (task.changes ?? []).map((c) => renderDiff(c.path, c.before, c.after)), [task.changes]);
+  const files = import_react11.useMemo(() => (task.changes ?? []).map((c) => renderDiff(c.path, c.before, c.after)), [task.changes]);
   const added = files.reduce((n, f) => n + f.added, 0);
   const removed = files.reduce((n, f) => n + f.removed, 0);
   return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(jsx_dev_runtime17.Fragment, {
@@ -23958,10 +24215,10 @@ function TaskDiffView({
 }
 
 // src/components/SettingsView.tsx
-var import_react12 = __toESM(require_react(), 1);
+var import_react13 = __toESM(require_react(), 1);
 
 // src/store.ts
-var import_react11 = __toESM(require_react(), 1);
+var import_react12 = __toESM(require_react(), 1);
 
 // src/data/codebase.ts
 var initialCodebase = {
@@ -24232,9 +24489,9 @@ function nextIssueId(issues2) {
   return `ENG-${maxNum + 1}`;
 }
 function useAppStore() {
-  const [state, dispatch] = import_react11.useReducer(reducer, undefined, loadState);
-  import_react11.useEffect(() => saveState(state), [state]);
-  import_react11.useEffect(() => {
+  const [state, dispatch] = import_react12.useReducer(reducer, undefined, loadState);
+  import_react12.useEffect(() => saveState(state), [state]);
+  import_react12.useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
   }, [state.theme]);
   return { state, dispatch };
@@ -24302,9 +24559,9 @@ function SettingsView({
 }) {
   const { t } = useI18n();
   const provider = settings.provider;
-  const fileRef = import_react12.useRef(null);
-  const [aiTest, setAiTest] = import_react12.useState({ status: "idle" });
-  const [ghTest, setGhTest] = import_react12.useState({ status: "idle" });
+  const fileRef = import_react13.useRef(null);
+  const [aiTest, setAiTest] = import_react13.useState({ status: "idle" });
+  const [ghTest, setGhTest] = import_react13.useState({ status: "idle" });
   const switchKind = (kind) => {
     if (kind === provider.kind)
       return;
@@ -24680,7 +24937,7 @@ function SettingsView({
 }
 
 // src/agent/engine.ts
-var import_react13 = __toESM(require_react(), 1);
+var import_react14 = __toESM(require_react(), 1);
 
 // src/agent/provider.ts
 function buildPrompt(input) {
@@ -25011,11 +25268,11 @@ function resolveEdits(codebase, edits, taskId) {
   return changes;
 }
 function useAgentEngine(state, dispatch) {
-  const running = import_react13.useRef(new Set);
-  import_react13.useEffect(() => {
+  const running = import_react14.useRef(new Set);
+  import_react14.useEffect(() => {
     state.agentTasks.filter((t) => t.status === "working" && !running.current.has(t.id)).forEach((t) => dispatch({ type: "agentStatus", id: t.id, status: "queued" }));
   }, []);
-  import_react13.useEffect(() => {
+  import_react14.useEffect(() => {
     const queued = state.agentTasks.filter((t) => t.status === "queued" && !running.current.has(t.id));
     queued.forEach((task) => {
       running.current.add(task.id);
@@ -25082,7 +25339,7 @@ function useAgentEngine(state, dispatch) {
 }
 
 // src/router.ts
-var import_react14 = __toESM(require_react(), 1);
+var import_react15 = __toESM(require_react(), 1);
 var DEFAULT_VIEW = { type: "issue", id: "ENG-2703" };
 function viewToHash(v) {
   switch (v.type) {
@@ -25129,13 +25386,13 @@ function parseHash(hash) {
   }
 }
 function useHashRoute() {
-  const [view, setViewState] = import_react14.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
-  import_react14.useEffect(() => {
+  const [view, setViewState] = import_react15.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
+  import_react15.useEffect(() => {
     const onHash = () => setViewState(parseHash(window.location.hash));
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const navigate = import_react14.useCallback((v) => {
+  const navigate = import_react15.useCallback((v) => {
     const hash = viewToHash(v);
     if (window.location.hash === hash) {
       setViewState(v);
@@ -25151,19 +25408,33 @@ var jsx_dev_runtime19 = __toESM(require_jsx_dev_runtime(), 1);
 function App() {
   const { state, dispatch } = useAppStore();
   const [view, navigate] = useHashRoute();
-  const [paletteOpen, setPaletteOpen] = import_react15.useState(false);
-  const [modalOpen, setModalOpen] = import_react15.useState(false);
-  const [selectedId, setSelectedId] = import_react15.useState(state.issues[0]?.id ?? null);
+  const [paletteOpen, setPaletteOpen] = import_react16.useState(false);
+  const [modalOpen, setModalOpen] = import_react16.useState(false);
+  const [selectedId, setSelectedId] = import_react16.useState(state.issues[0]?.id ?? null);
+  const installPrompt = import_react16.useRef(null);
+  import_react16.useEffect(() => {
+    const onPrompt = (e) => {
+      e.preventDefault();
+      installPrompt.current = e;
+    };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+  }, []);
   const allIssues = state.issues;
-  const orderedIds = import_react15.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
+  const orderedIds = import_react16.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
   const addIssue = (partial) => {
     const issue = { ...partial, id: nextIssueId(allIssues), date: "Jul 26" };
     dispatch({ type: "addIssue", issue });
     navigate({ type: "list" });
     setSelectedId(issue.id);
   };
-  import_react15.useEffect(() => {
+  import_react16.useEffect(() => {
     const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        navigate({ type: "settings" });
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setModalOpen(false);
@@ -25251,7 +25522,17 @@ function App() {
           theme: state.theme,
           onToggleTheme: toggleTheme,
           locale: state.locale,
-          onToggleLocale: toggleLocale
+          onToggleLocale: toggleLocale,
+          onSetLocale: (lo) => dispatch({ type: "setLocale", locale: lo }),
+          onInstallApp: () => {
+            const p = installPrompt.current;
+            if (p) {
+              p.prompt();
+              installPrompt.current = null;
+            } else {
+              window.open("https://github.com/kongbaifan/linear_app", "_blank");
+            }
+          }
         }, undefined, false, undefined, this),
         /* @__PURE__ */ jsx_dev_runtime19.jsxDEV("main", {
           className: "main",
@@ -25382,7 +25663,7 @@ function App() {
 
 // src/main.tsx
 var jsx_dev_runtime20 = __toESM(require_jsx_dev_runtime(), 1);
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime20.jsxDEV(import_react16.StrictMode, {
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime20.jsxDEV(import_react17.StrictMode, {
   children: /* @__PURE__ */ jsx_dev_runtime20.jsxDEV(App, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));
 if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !import.meta.env?.DEV) {

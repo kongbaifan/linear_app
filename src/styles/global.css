@@ -2352,3 +2352,61 @@ body,
   opacity: 0.45;
   cursor: default;
 }
+
+/* ─── Sidebar footer / user menu ──────────────────────────────── */
+
+.sidebar-footer {
+  margin-top: auto;
+  position: relative;
+  padding-top: 10px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 7px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.user-row:hover {
+  background: var(--bg-hover);
+}
+
+.user-row-name {
+  font-weight: 550;
+}
+
+.user-row-plan {
+  color: var(--text-3);
+  font-size: 12px;
+  flex: 1;
+}
+
+.user-menu {
+  position: absolute;
+  top: auto; /* override .menu's top so the panel opens upward */
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: 232px;
+  z-index: 70;
+}
+
+.user-menu .menu-item {
+  padding: 6px 10px;
+}
+
+.user-menu-sub {
+  border-left: 2px solid var(--border);
+  margin: 2px 0 2px 12px;
+  padding-left: 4px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 5px 4px;
+}

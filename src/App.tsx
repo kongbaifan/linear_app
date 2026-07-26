@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import IssueList from './components/IssueList'
 import IssueDetail from './components/IssueDetail'
@@ -27,6 +27,16 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
+  const installPrompt = useRef<any>(null)
+
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault()
+      installPrompt.current = e
+    }
+    window.addEventListener('beforeinstallprompt', onPrompt)
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
+  }, [])
 
   const allIssues = state.issues
 
@@ -49,6 +59,11 @@ export default function App() {
   // ─── Global keyboard shortcuts ────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault()
+        navigate({ type: 'settings' })
+        return
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setModalOpen(false)
@@ -155,6 +170,16 @@ export default function App() {
         onToggleTheme={toggleTheme}
         locale={state.locale}
         onToggleLocale={toggleLocale}
+        onSetLocale={(lo) => dispatch({ type: 'setLocale', locale: lo })}
+        onInstallApp={() => {
+          const p = installPrompt.current
+          if (p) {
+            p.prompt()
+            installPrompt.current = null
+          } else {
+            window.open('https://github.com/kongbaifan/linear_app', '_blank')
+          }
+        }}
       />
       <main className="main">
         {view.type === 'list' && (
