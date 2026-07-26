@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { View } from '../App'
 import type { Issue } from '../data/mock'
 import { statusMeta } from './meta'
-import { AgentTasks, Board, ChatBubble, Compose, Gear, Inbox, Moon, MyIssues, Projects, Reviews, Search, Sun, UIRefresh } from './Icons'
+import { AgentTasks, Board, ChatBubble, Compose, Gear, Inbox, Moon, MyIssues, Projects, Pulse, Reviews, Search, Sun, UIRefresh } from './Icons'
 import { useI18n } from '../i18n'
 
 interface Item {
@@ -127,6 +127,13 @@ export default function CommandPalette({
         label: t('palette.goReviews'),
         icon: <Reviews size={14} />,
         run: () => onNavigate({ type: 'reviews' }),
+      },
+      {
+        key: 'nav-pulse',
+        section: t('palette.navigation'),
+        label: t('palette.goPulse'),
+        icon: <Pulse size={14} />,
+        run: () => onNavigate({ type: 'pulse' }),
       },
       ...issues.map<Item>((i) => ({
         key: i.id,

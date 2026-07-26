@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react'
-import type { AgentTask } from '../store'
+import type { AgentTask, FileChange } from '../store'
 import { renderDiff } from '../agent/diff'
 import { useI18n, type MessageKey } from '../i18n'
 import { BotAvatar } from './Avatar'
 import { ArrowUp, FileIcon, GitBranch, StatusDone } from './Icons'
 
-function DiffCard({ file }: { file: ReturnType<typeof renderDiff> }) {
+function DiffCard({ change }: { change: FileChange }) {
+  const { t } = useI18n()
+  const [expanded, setExpanded] = useState(false)
+  const file = useMemo(
+    () => renderDiff(change.path, change.before, change.after, !expanded),
+    [change, expanded],
+  )
   return (
     <div className="diff-file">
       <div className="diff-file-header">
@@ -22,10 +28,15 @@ function DiffCard({ file }: { file: ReturnType<typeof renderDiff> }) {
       <div className="diff-code">
         {file.lines.map((line, i) =>
           line.kind === 'gap' ? (
-            <div key={i} className="diff-line gap">
+            <div
+              key={i}
+              className="diff-line gap clickable"
+              title={t('diff.expand')}
+              onClick={() => setExpanded(true)}
+            >
               <span className="gutter" />
               <span className="sign" />
-              <span className="code">⋯</span>
+              <span className="code">⋯ {t('diff.expand')}</span>
             </div>
           ) : (
             <div
@@ -158,8 +169,8 @@ export default function TaskDiffView({
       )}
 
       <div className="diff-body">
-        {files.map((f) => (
-          <DiffCard key={f.path + '/' + f.name} file={f} />
+        {(task.changes ?? []).map((c) => (
+          <DiffCard key={c.path} change={c} />
         ))}
       </div>
 

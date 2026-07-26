@@ -10,6 +10,7 @@ import AgentTasksView from './components/AgentTasksView'
 import TaskDiffView from './components/TaskDiffView'
 import SettingsView from './components/SettingsView'
 import ChatView from './components/ChatView'
+import PulseView from './components/PulseView'
 import { useAgentEngine } from './agent/engine'
 import { chatReply, type ChatTurn } from './agent/provider'
 import type { Issue, StatusKey } from './data/mock'
@@ -288,6 +289,11 @@ export default function App() {
             window.open('https://github.com/kongbaifan/linear_app', '_blank')
           }
         }}
+        onOpenPalette={() => setPaletteOpen(true)}
+        onNewIssue={() => {
+          setModalStatus('todo')
+          setModalOpen(true)
+        }}
       />
       <main className="main">
         {view.type === 'list' && (
@@ -394,6 +400,15 @@ export default function App() {
             }}
             onSetModel={(threadId, model) => dispatch({ type: 'setChatModel', threadId, model })}
             onOpenSettings={() => navigate({ type: 'settings' })}
+          />
+        )}
+        {view.type === 'pulse' && (
+          <PulseView
+            issues={allIssues}
+            agentTasks={state.agentTasks}
+            chats={state.chats}
+            onOpenIssue={openIssue}
+            onOpenTask={(id) => navigate({ type: 'task', id })}
           />
         )}
         {view.type === 'settings' && (

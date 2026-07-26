@@ -55,11 +55,17 @@ function diffOps(before: string[], after: string[]): Op[] {
 
 const CONTEXT = 3
 
-export function renderDiff(path: string, before: string, after: string): RenderedDiffFile {
+export function renderDiff(
+  path: string,
+  before: string,
+  after: string,
+  collapse = true,
+): RenderedDiffFile {
   const ops = diffOps(before.split('\n'), after.split('\n'))
 
   // Mark which ops to keep: every change + CONTEXT lines around it.
-  const keep = new Array(ops.length).fill(false)
+  // With collapse=false, every line is kept (expanded view).
+  const keep = new Array(ops.length).fill(!collapse)
   ops.forEach((op, idx) => {
     if (op.type !== 'same') {
       for (let k = Math.max(0, idx - CONTEXT); k <= Math.min(ops.length - 1, idx + CONTEXT); k++) {

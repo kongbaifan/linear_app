@@ -11,6 +11,7 @@ export type View =
   | { type: 'agents' }
   | { type: 'task'; id: string }
   | { type: 'chat'; id?: string }
+  | { type: 'pulse' }
   | { type: 'settings' }
 
 export const DEFAULT_VIEW: View = { type: 'inbox' }
@@ -33,6 +34,8 @@ export function viewToHash(v: View): string {
       return `#/task/${v.id}`
     case 'chat':
       return v.id ? `#/chat/${v.id}` : '#/chat'
+    case 'pulse':
+      return '#/pulse'
     case 'settings':
       return '#/settings'
   }
@@ -59,6 +62,8 @@ export function parseHash(hash: string): View {
       return b ? { type: 'task', id: b } : { type: 'agents' }
     case 'chat':
       return b ? { type: 'chat', id: b } : { type: 'chat' }
+    case 'pulse':
+      return { type: 'pulse' }
     case 'settings':
       return { type: 'settings' }
     default:

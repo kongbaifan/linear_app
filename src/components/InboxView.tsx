@@ -93,6 +93,19 @@ export default function InboxView({
                 {n.kind === 'failed' && n.detail ? ` — ${n.detail}` : ''}
               </span>
             </span>
+            {n.unread && (
+              <span
+                className="inbox-quick"
+                role="button"
+                title={t('inbox.markRead')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRead(n.id)
+                }}
+              >
+                <StatusDone size={14} />
+              </span>
+            )}
             <span className="inbox-time">{relTime(n.time, locale)}</span>
           </button>
         ))}

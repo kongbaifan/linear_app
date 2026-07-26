@@ -7,10 +7,8 @@ import {
   ChevronDown,
   Compose,
   Inbox,
-  Initiatives,
   LinageLogo,
   Moon,
-  More,
   MyIssues,
   Projects,
   Pulse,
@@ -170,6 +168,8 @@ export default function Sidebar({
   onToggleLocale,
   onSetLocale,
   onInstallApp,
+  onOpenPalette,
+  onNewIssue,
 }: {
   view: View
   onNavigate: (v: View) => void
@@ -179,6 +179,8 @@ export default function Sidebar({
   onToggleLocale: () => void
   onSetLocale: (l: Locale) => void
   onInstallApp: () => void
+  onOpenPalette: () => void
+  onNewIssue: () => void
 }) {
   const { t } = useI18n()
   const isIssue = view.type === 'issue'
@@ -200,10 +202,10 @@ export default function Sidebar({
           <ChevronDown size={11} />
         </button>
         <div className="sidebar-top-actions">
-          <button className="icon-btn" title={t('action.search')}>
+          <button className="icon-btn" title={t('action.search')} onClick={onOpenPalette}>
             <Search />
           </button>
-          <button className="icon-btn" title={t('action.newIssue')}>
+          <button className="icon-btn" title={t('action.newIssue')} onClick={onNewIssue}>
             <Compose />
           </button>
         </div>
@@ -226,7 +228,10 @@ export default function Sidebar({
           <Reviews />
           {t('nav.reviews')}
         </button>
-        <button className="nav-item">
+        <button
+          className={`nav-item${view.type === 'pulse' ? ' active' : ''}`}
+          onClick={() => onNavigate({ type: 'pulse' })}
+        >
           <Pulse />
           {t('nav.pulse')}
         </button>
@@ -236,17 +241,9 @@ export default function Sidebar({
         <button className="nav-heading">
           {t('nav.workspace')} <ChevronDown size={10} />
         </button>
-        <button className="nav-item">
-          <Initiatives />
-          {t('nav.initiatives')}
-        </button>
         <button className={`nav-item${isProjects ? ' active' : ''}`} onClick={() => onNavigate({ type: 'projects' })}>
           <Projects />
           {t('nav.projects')}
-        </button>
-        <button className="nav-item">
-          <More />
-          {t('nav.more')}
         </button>
       </div>
 

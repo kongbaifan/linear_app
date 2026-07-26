@@ -18,6 +18,7 @@ import {
   Paperclip,
   Projects as ProjectsIcon,
   Star,
+  StatusDone,
 } from './Icons'
 
 const executorLabel: Record<ExecutorKey, MessageKey> = {
@@ -213,6 +214,21 @@ export default function IssueDetail({
                 </div>
               ))}
             </div>
+
+            {agentTask && (agentTask.status === 'queued' || agentTask.status === 'working') && (
+              <div className="live-steps">
+                {agentTask.steps.map((s, i) => (
+                  <div key={i} className="live-step">
+                    <StatusDone size={11} />
+                    <span>{s}</span>
+                  </div>
+                ))}
+                <div className="live-step current">
+                  <span className="spinner" />
+                  <span>{t('agents.working')}</span>
+                </div>
+              </div>
+            )}
 
             <div className="composer slim">
               <input

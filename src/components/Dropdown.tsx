@@ -21,7 +21,19 @@ export function Dropdown({
   closeOnSelect?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [flip, setFlip] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Flip upward when the menu would overflow the viewport bottom.
+  useEffect(() => {
+    if (!open) {
+      setFlip(false)
+      return
+    }
+    const r = menuRef.current?.getBoundingClientRect()
+    if (r && r.bottom > window.innerHeight - 8) setFlip(true)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -46,7 +58,7 @@ export function Dropdown({
     <div className="dropdown" ref={ref}>
       <div onClick={() => setOpen((o) => !o)}>{trigger(open)}</div>
       {open && (
-        <div className="menu">
+        <div className={`menu${flip ? ' flip' : ''}`} ref={menuRef}>
           {header && <div className="menu-header">{header}</div>}
           {options.map((opt) => (
             <button
