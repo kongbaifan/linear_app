@@ -8,6 +8,9 @@ import ProjectsView from './components/ProjectsView'
 import CommandPalette from './components/CommandPalette'
 import NewIssueModal from './components/NewIssueModal'
 import { FloatingAgentPanel } from './components/AgentPanel'
+import AgentTasksView from './components/AgentTasksView'
+import SettingsModal from './components/SettingsModal'
+import { useAgentEngine } from './agent/engine'
 import type { Issue } from './data/mock'
 import { statusOrder } from './components/meta'
 import { useHashRoute, type View } from './router'
@@ -21,6 +24,7 @@ export default function App() {
   const [view, navigate] = useHashRoute()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
 
   const allIssues = state.issues
@@ -87,6 +91,23 @@ export default function App() {
     navigate({ type: 'issue', id })
   }
 
+  useAgentEngine(state, dispatch)
+
+  const delegateIssue = (issue: Issue) => {
+    dispatch({
+      type: 'delegate',
+      task: {
+        id: `task-${Date.now()}`,
+        issueId: issue.id,
+        title: issue.title,
+        status: 'queued',
+        model: state.settings.model,
+        steps: [],
+        createdAt: Date.now(),
+      },
+    })
+  }
+
   const toggleTheme = () =>
     dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
 
@@ -125,6 +146,11 @@ export default function App() {
             onUpdate={(patch) =>
               view.type === 'issue' && dispatch({ type: 'updateIssue', id: view.id, patch })
             }
+            agentTask={state.agentTasks.find(
+              (a) => a.issueId === view.id && a.status !== 'done' && a.status !== 'failed',
+            )}
+            onDelegate={delegateIssue}
+            onViewAgent={() => navigate({ type: 'agents' })}
           />
         )}
         {view.type === 'diff' && <DiffView onBack={() => navigate({ type: 'list' })} />}
@@ -137,6 +163,15 @@ export default function App() {
           />
         )}
         {view.type === 'projects' && <ProjectsView />}
+        {view.type === 'agents' && (
+          <AgentTasksView
+            tasks={state.agentTasks}
+            onOpenIssue={openIssue}
+            onOpenDiff={() => navigate({ type: 'diff', id: 'ENG-2498' })}
+            onApprove={(id) => dispatch({ type: 'agentStatus', id, status: 'done' })}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+        )}
       </main>
 
       {view.type === 'issue' && view.id === 'ENG-2703' && (
@@ -173,6 +208,13 @@ export default function App() {
       )}
       {modalOpen && (
         <NewIssueModal onClose={() => setModalOpen(false)} onCreate={(p) => { addIssue(p); setModalOpen(false) }} />
+      )}
+      {settingsOpen && (
+        <SettingsModal
+          settings={state.settings}
+          onSave={(s) => dispatch({ type: 'setSettings', settings: s })}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
     </div>
     </I18nProvider>

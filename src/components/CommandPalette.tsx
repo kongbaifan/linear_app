@@ -101,6 +101,13 @@ export default function CommandPalette({
         run: () => onNavigate({ type: 'projects' }),
       },
       {
+        key: 'nav-agents',
+        section: t('palette.navigation'),
+        label: t('palette.goAgents'),
+        icon: <Compose size={14} />,
+        run: () => onNavigate({ type: 'agents' }),
+      },
+      {
         key: 'nav-reviews',
         section: t('palette.navigation'),
         label: t('palette.goReviews'),

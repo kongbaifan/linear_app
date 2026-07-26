@@ -1,4 +1,5 @@
 import type { Issue, PriorityKey, StatusKey } from '../data/mock'
+import type { AgentTask } from '../store'
 import { eng2703Activity, users, type ActivityItem, type BodyPart, type EventPart } from '../data/mock'
 import { Avatar, BotAvatar } from './Avatar'
 import { Dropdown } from './Dropdown'
@@ -142,10 +143,16 @@ export default function IssueDetail({
   issue,
   onOpenDiff,
   onUpdate,
+  agentTask,
+  onDelegate,
+  onViewAgent,
 }: {
   issue: Issue
   onOpenDiff: (id: string) => void
   onUpdate: (patch: Partial<Issue>) => void
+  agentTask?: AgentTask
+  onDelegate: (issue: Issue) => void
+  onViewAgent: () => void
 }) {
   const { t } = useI18n()
   return (
@@ -282,6 +289,26 @@ export default function IssueDetail({
               Linear
             </span>
           </button>
+
+          <div className="prop-label">Agent</div>
+          {!agentTask && (
+            <button className="btn sm delegate-btn" onClick={() => onDelegate(issue)}>
+              <LinearLogo size={11} />
+              {t('agents.delegate')}
+            </button>
+          )}
+          {agentTask && (agentTask.status === 'queued' || agentTask.status === 'working') && (
+            <button className="btn sm delegate-btn working" onClick={onViewAgent}>
+              <span className="spinner" />
+              {t('agents.working')}
+            </button>
+          )}
+          {agentTask && agentTask.status === 'needsReview' && (
+            <button className="btn sm delegate-btn review" onClick={() => onOpenDiff('ENG-2498')}>
+              <LinearLogo size={11} />
+              {t('agents.review')}
+            </button>
+          )}
 
           <div className="prop-label">{t('issue.labels')}</div>
           <div className="label-chips">

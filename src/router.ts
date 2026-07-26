@@ -8,6 +8,7 @@ export type View =
   | { type: 'diff'; id: string }
   | { type: 'inbox' }
   | { type: 'projects' }
+  | { type: 'agents' }
 
 export const DEFAULT_VIEW: View = { type: 'issue', id: 'ENG-2703' }
 
@@ -23,6 +24,8 @@ export function viewToHash(v: View): string {
       return '#/inbox'
     case 'projects':
       return '#/projects'
+    case 'agents':
+      return '#/agents'
   }
 }
 
@@ -40,6 +43,8 @@ export function parseHash(hash: string): View {
       return { type: 'inbox' }
     case 'projects':
       return { type: 'projects' }
+    case 'agents':
+      return { type: 'agents' }
     default:
       return DEFAULT_VIEW
   }

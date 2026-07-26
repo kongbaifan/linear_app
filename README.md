@@ -8,6 +8,7 @@
 - **Issue 详情** — 标题/描述、Activity 活动时间线、右侧属性面板(状态/优先级/负责人/标签)
 - **Diff 审查** — 文件 diff 卡片(行号、红删绿增高亮、语法着色)、Activity/Guide/Diff 标签页、右侧嵌入式 Agent 会话面板
 - **AI Agent 面板** — 详情页右下角浮动窗口(可最小化/放大/关闭,输入消息有打字动画回复),diff 页右侧嵌入面板(工作状态折叠、引用提问、实时 Working 状态)
+- **Agent 工作台**(`feat/agent-workbench` 分支)— `#/agents` 任务队列:在事项详情点"委派给 Agent"创建任务,引擎驱动 排队→工作中(步骤实时流出)→待审查(摘要 + 审查变更/批准),任务持久化。Provider 可插拔(`src/agent/provider.ts`):默认内置模拟引擎;在 Agent 设置里填入自己的 Anthropic API key 即走真实 Claude API(浏览器直连,key 仅存本地,失败自动回退模拟)
 
 ## 运行
 

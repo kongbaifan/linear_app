@@ -41,6 +41,7 @@ export default function Sidebar({
   const isDiff = view.type === 'diff'
   const isInbox = view.type === 'inbox'
   const isProjects = view.type === 'projects'
+  const isAgents = view.type === 'agents'
 
   return (
     <aside className="sidebar">
@@ -118,7 +119,7 @@ export default function Sidebar({
           </span>
           Faster app launch
         </button>
-        <button className="nav-item">
+        <button className={`nav-item${isAgents ? ' active' : ''}`} onClick={() => onNavigate({ type: 'agents' })}>
           <AgentTasks />
           {t('nav.agentTasks')}
         </button>

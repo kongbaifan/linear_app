@@ -14,11 +14,34 @@ import type { Locale } from './i18n'
 
 export type Theme = 'dark' | 'light'
 
+export type AgentTaskStatus = 'queued' | 'working' | 'needsReview' | 'done' | 'failed'
+
+export interface AgentTask {
+  id: string
+  issueId: string
+  title: string
+  status: AgentTaskStatus
+  model: string
+  steps: string[]
+  summary?: string
+  createdAt: number
+  finishedAt?: number
+}
+
+export interface AgentSettings {
+  apiKey: string
+  model: string
+}
+
+export const DEFAULT_AGENT_MODEL = 'claude-sonnet-4-5'
+
 export interface AppState {
   issues: Issue[]
   notifications: Notification[]
   theme: Theme
   locale: Locale
+  agentTasks: AgentTask[]
+  settings: AgentSettings
 }
 
 export type Action =
@@ -29,12 +52,23 @@ export type Action =
   | { type: 'readAllNotifications' }
   | { type: 'setTheme'; theme: Theme }
   | { type: 'setLocale'; locale: Locale }
+  | { type: 'delegate'; task: AgentTask }
+  | { type: 'agentStep'; id: string; step: string }
+  | { type: 'agentStatus'; id: string; status: AgentTaskStatus; summary?: string }
+  | { type: 'setSettings'; settings: Partial<AgentSettings> }
   | { type: 'reset' }
 
 const STORAGE_KEY = 'linear-clone-state-v1'
 
 function defaultState(): AppState {
-  return { issues: initialIssues, notifications: initialNotifications, theme: 'dark', locale: 'en' }
+  return {
+    issues: initialIssues,
+    notifications: initialNotifications,
+    theme: 'dark',
+    locale: 'en',
+    agentTasks: [],
+    settings: { apiKey: '', model: DEFAULT_AGENT_MODEL },
+  }
 }
 
 function loadState(): AppState {
@@ -50,6 +84,11 @@ function loadState(): AppState {
       notifications: parsed.notifications,
       theme: parsed.theme === 'light' ? 'light' : 'dark',
       locale: parsed.locale === 'zh' ? 'zh' : 'en',
+      agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
+      settings: {
+        apiKey: typeof parsed.settings?.apiKey === 'string' ? parsed.settings.apiKey : '',
+        model: typeof parsed.settings?.model === 'string' ? parsed.settings.model : DEFAULT_AGENT_MODEL,
+      },
     }
   } catch {
     return defaultState()
@@ -104,8 +143,36 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, theme: action.theme }
     case 'setLocale':
       return { ...state, locale: action.locale }
+    case 'delegate':
+      return { ...state, agentTasks: [action.task, ...state.agentTasks] }
+    case 'agentStep':
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id ? { ...t, steps: [...t.steps, action.step] } : t,
+        ),
+      }
+    case 'agentStatus':
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id
+            ? {
+                ...t,
+                status: action.status,
+                summary: action.summary ?? t.summary,
+                finishedAt:
+                  action.status === 'needsReview' || action.status === 'done' || action.status === 'failed'
+                    ? Date.now()
+                    : t.finishedAt,
+              }
+            : t,
+        ),
+      }
+    case 'setSettings':
+      return { ...state, settings: { ...state.settings, ...action.settings } }
     case 'reset':
-      return { ...defaultState(), theme: state.theme, locale: state.locale }
+      return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings }
     default:
       return state
   }

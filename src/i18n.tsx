@@ -110,6 +110,24 @@ const en = {
   'agent.workedFor': 'Worked for',
   'agent.inputPlaceholder': 'Tell Linear what to do next…',
   'agent.open': 'Open Linear agent',
+
+  // agent workbench
+  'agents.title': 'Agent tasks',
+  'agents.empty': 'No agent tasks yet — open an issue and delegate it to the agent.',
+  'agents.status.queued': 'Queued',
+  'agents.status.working': 'Working',
+  'agents.status.needsReview': 'Needs review',
+  'agents.status.done': 'Done',
+  'agents.status.failed': 'Failed',
+  'agents.review': 'Review diff',
+  'agents.settings': 'Agent settings',
+  'agents.apiKey': 'Anthropic API key',
+  'agents.apiKeyHint': 'Stored only in your browser. Leave empty to use the built-in simulator.',
+  'agents.model': 'Model',
+  'agents.save': 'Save',
+  'agents.delegate': 'Delegate to Agent',
+  'agents.working': 'Agent working…',
+  'palette.goAgents': 'Go to Agent tasks',
 }
 
 export type MessageKey = keyof typeof en
@@ -208,6 +226,23 @@ const zh: Record<MessageKey, string> = {
   'agent.workedFor': '已工作',
   'agent.inputPlaceholder': '告诉 Linear 接下来做什么…',
   'agent.open': '打开 Linear agent',
+
+  'agents.title': 'Agent 任务',
+  'agents.empty': '还没有 Agent 任务——打开一个事项,把它委派给 Agent 试试。',
+  'agents.status.queued': '排队中',
+  'agents.status.working': '工作中',
+  'agents.status.needsReview': '待审查',
+  'agents.status.done': '已完成',
+  'agents.status.failed': '失败',
+  'agents.review': '审查变更',
+  'agents.settings': 'Agent 设置',
+  'agents.apiKey': 'Anthropic API key',
+  'agents.apiKeyHint': '仅保存在你的浏览器本地。留空则使用内置模拟引擎。',
+  'agents.model': '模型',
+  'agents.save': '保存',
+  'agents.delegate': '委派给 Agent',
+  'agents.working': 'Agent 工作中…',
+  'palette.goAgents': '前往 Agent 任务',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }
