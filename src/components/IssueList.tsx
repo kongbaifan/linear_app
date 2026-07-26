@@ -63,10 +63,6 @@ export default function IssueList({
         <div className="panel-header-right">
           {!board && (
             <span className="shortcut-hints">
-              <span className="kbd">J</span>
-              <span className="kbd">K</span> {t('list.hint.navigate')}
-              <span className="kbd">↵</span> {t('list.hint.open')}
-              <span className="kbd">C</span> {t('list.hint.new')}
               <span className="kbd">⌘K</span> {t('list.hint.commands')}
             </span>
           )}

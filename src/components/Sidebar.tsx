@@ -5,7 +5,6 @@ import {
   AgentTasks,
   ChevronDown,
   Compose,
-  Gear,
   Inbox,
   Initiatives,
   LinageLogo,
@@ -24,11 +23,15 @@ const REPO_URL = 'https://github.com/kongbaifan/linear_app'
 
 function UserMenu({
   locale,
+  theme,
+  onToggleTheme,
   onNavigate,
   onSetLocale,
   onInstallApp,
 }: {
   locale: Locale
+  theme: 'dark' | 'light'
+  onToggleTheme: () => void
   onNavigate: (v: View) => void
   onSetLocale: (l: Locale) => void
   onInstallApp: () => void
@@ -104,6 +107,12 @@ function UserMenu({
               onNavigate({ type: 'settings' })
             }}
           />
+          <button className="menu-item" onClick={onToggleTheme}>
+            <span className="menu-item-label">{t('action.toggleTheme')}</span>
+            <span style={{ color: 'var(--text-3)', display: 'inline-flex' }}>
+              {theme === 'dark' ? <Sun size={12} /> : <Moon size={12} />}
+            </span>
+          </button>
           <Item label={t('action.language')} chevron onClick={() => setLangOpen((o) => !o)} />
           {langOpen && (
             <div className="user-menu-sub">
@@ -189,15 +198,6 @@ export default function Sidebar({
           <ChevronDown size={11} />
         </button>
         <div className="sidebar-top-actions">
-          <button className="icon-btn" title={t('settings.title')} onClick={() => onNavigate({ type: 'settings' })}>
-            <Gear size={14} />
-          </button>
-          <button className="icon-btn lang-btn" title={t('action.language')} onClick={onToggleLocale}>
-            {locale === 'en' ? '中' : 'EN'}
-          </button>
-          <button className="icon-btn" title={t('action.toggleTheme')} onClick={onToggleTheme}>
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
           <button className="icon-btn" title={t('action.search')}>
             <Search />
           </button>
@@ -265,6 +265,8 @@ export default function Sidebar({
 
       <UserMenu
         locale={locale}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
         onNavigate={onNavigate}
         onSetLocale={onSetLocale}
         onInstallApp={onInstallApp}

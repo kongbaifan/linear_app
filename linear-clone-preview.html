@@ -23,10 +23,30 @@
   --diff-add-gutter: #46954a47;
   --diff-del-bg: #e5534b21;
   --diff-del-gutter: #e5534b3d;
-  --font-sans: "Inter", "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-sans: "Inter", "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Helvetica, Arial, sans-serif;
   --font-mono: "Berkeley Mono", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --radius-sm: 6px;
   --radius: 8px;
   --radius-lg: 10px;
+  --radius-xl: 12px;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --fz-xs: 11px;
+  --fz-sm: 12px;
+  --fz-md: 13px;
+  --fz-lg: 15px;
+  --fz-xl: 20px;
+  --shadow-menu: 0 8px 32px #00000073;
+  --shadow-modal: 0 16px 64px #00000080;
+  --dur: .12s;
+  --dur-slow: .2s;
+  --ease: cubic-bezier(.2, .9, .3, 1);
+  --ctl: 30px;
+  --ctl-sm: 26px;
   --bg-code: #0d0e10;
   --bg-float: #1a1b1e;
   --scrollbar: #ffffff14;
@@ -60,6 +80,16 @@ body {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: #5e6ad259;
 }
 
 button {
@@ -132,10 +162,11 @@ button {
 .icon-btn {
   display: grid;
   color: var(--text-2);
-  border-radius: 6px;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  border-radius: 7px;
   place-items:  center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
 }
 
 .icon-btn:hover {
@@ -221,12 +252,12 @@ button {
 
 .panel-header {
   display: flex;
+  padding: 0 var(--s4);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   justify-content: space-between;
   align-items:  center;
-  height: 46px;
-  padding: 0 16px;
+  height: 48px;
 }
 
 .panel-header-left {
@@ -495,15 +526,16 @@ button {
 
 .btn {
   display: inline-flex;
+  height: var(--ctl);
+  padding: 0 var(--s3);
   border: 1px solid var(--border-strong);
   background: var(--bg-raised);
   color: var(--text-1);
-  border-radius: 6px;
+  border-radius: 7px;
   flex-shrink: 0;
+  justify-content: center;
   align-items:  center;
   gap: 6px;
-  height: 28px;
-  padding: 0 10px;
   transition: background .15s;
   font-size: 12.5px;
   font-weight: 500;
@@ -1008,8 +1040,8 @@ button {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -1038,13 +1070,13 @@ button {
 .palette {
   background: var(--bg-float);
   border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
-  animation: pop-in .12s ease;
+  animation: pop-in var(--dur) var(--ease);
   border-radius: 12px;
   width: 580px;
   max-width: calc(100vw - 48px);
   margin-top: 110px;
-  box-shadow: 0 16px 70px #0000008c;
 }
 
 @keyframes pop-in {
@@ -1166,13 +1198,13 @@ button {
 .modal {
   background: var(--bg-float);
   border: 1px solid var(--border-strong);
-  animation: pop-in .12s ease;
+  box-shadow: var(--shadow-modal);
+  padding: var(--s4);
+  animation: pop-in var(--dur) var(--ease);
   border-radius: 12px;
   width: 620px;
   max-width: calc(100vw - 48px);
   margin-top: 140px;
-  padding: 14px 16px;
-  box-shadow: 0 16px 70px #0000008c;
 }
 
 .modal-breadcrumb {
@@ -1231,10 +1263,14 @@ button {
 }
 
 .btn.sm {
+  height: var(--ctl-sm);
+  padding: 0 var(--s2);
+  font-size: var(--fz-sm);
   gap: 5px;
-  height: 26px;
-  padding: 0 8px;
-  font-size: 12px;
+}
+
+.btn:active {
+  transform: translateY(.5px);
 }
 
 .modal-footer {
@@ -1257,14 +1293,14 @@ button {
   position: absolute;
   background: var(--bg-float);
   border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-menu);
+  padding: var(--s1);
   z-index: 60;
-  animation: pop-in .1s ease;
-  border-radius: 9px;
+  animation: pop-in var(--dur) var(--ease);
   min-width: 210px;
-  padding: 5px;
   top: calc(100% + 4px);
   left: 0;
-  box-shadow: 0 10px 40px #00000080;
 }
 
 .menu-header {
@@ -1275,13 +1311,14 @@ button {
 
 .menu-item {
   display: flex;
+  align-items:  center;
+  gap: var(--s2);
+  border-radius: var(--radius-sm);
   color: var(--text-1);
   text-align: left;
-  border-radius: 6px;
-  align-items:  center;
-  gap: 9px;
   width: 100%;
-  padding: 6px 9px;
+  min-height: 30px;
+  padding: 5px 9px;
   font-size: 12.5px;
   font-weight: 500;
 }
@@ -1849,12 +1886,13 @@ button {
 
 .inbox-row {
   display: flex;
+  align-items:  center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
   border-bottom: 1px solid var(--border-subtle);
   text-align: left;
-  align-items:  center;
-  gap: 10px;
+  transition: background var(--dur) var(--ease);
   width: 100%;
-  padding: 11px 16px;
 }
 
 .inbox-row:hover {
@@ -1875,10 +1913,14 @@ button {
 
 .inbox-icon {
   display: grid;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
   color: var(--text-3);
+  border-radius: 50%;
   flex-shrink: 0;
   place-items:  center;
-  width: 20px;
+  width: 28px;
+  height: 28px;
 }
 
 .inbox-main {
@@ -1906,10 +1948,12 @@ button {
 
 .inbox-event {
   color: var(--text-3);
-  white-space: nowrap;
+  font-size: var(--fz-sm);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12.5px;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
 }
 
 .inbox-time {
@@ -2062,8 +2106,9 @@ html[data-theme="light"] {
   color-scheme: light;
 }
 
-[data-theme="light"] .palette, [data-theme="light"] .modal, [data-theme="light"] .menu {
-  box-shadow: 0 16px 60px #0000002e;
+[data-theme="light"] {
+  --shadow-menu: 0 8px 28px #14161c24;
+  --shadow-modal: 0 16px 56px #14161c2e;
 }
 
 [data-theme="light"] .agent-panel.floating {
@@ -2117,7 +2162,22 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
 .agents-empty {
   text-align: center;
   color: var(--text-3);
-  padding: 48px 24px;
+  font-size: var(--fz-md);
+  max-width: 380px;
+  margin: 0 auto;
+  padding: 72px 24px;
+  line-height: 1.7;
+}
+
+.agents-empty:before {
+  content: "";
+  display: block;
+  margin: 0 auto var(--s3);
+  border: 1px dashed var(--border-strong);
+  background: radial-gradient(circle at center, var(--bg-active) 0 30%, transparent 31%);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
 }
 
 .agent-task {
@@ -2199,22 +2259,24 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
 
 .settings-label {
   display: block;
+  font-size: var(--fz-sm);
   color: var(--text-2);
-  margin: 14px 0 6px;
-  font-size: 12px;
+  margin: var(--s4) 0 var(--s2);
   font-weight: 550;
 }
 
 .settings-input {
-  background: var(--bg-raised);
+  background: var(--bg-surface);
   border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--s3);
   color: var(--text-1);
-  outline: none;
-  border-radius: 7px;
-  width: 100%;
-  padding: 7px 10px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fz-md);
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+  width: 100%;
+  height: 32px;
 }
 
 .settings-input:focus {
@@ -2268,9 +2330,9 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
 
 .settings-section {
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--bg-raised);
-  padding: 18px 20px 20px;
+  padding: var(--s5);
 }
 
 .settings-section-title {
@@ -2386,12 +2448,13 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
 
 .sample-badge {
   color: var(--text-3);
-  border: 1px solid var(--border-strong);
+  background: var(--bg-active);
   border-radius: 4px;
   flex-shrink: 0;
-  padding: 0 5px;
-  font-size: 10px;
-  font-weight: 600;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 550;
+  line-height: 1.5;
 }
 
 .projects-page {
@@ -19841,7 +19904,7 @@ var zh = {
   "agent.inputPlaceholder": "告诉 Linage 接下来做什么…",
   "agent.open": "打开 Linage agent",
   "agents.title": "Agent 任务",
-  "agents.empty": "还没有 Agent 任务——打开一个事项,把它委派给 Agent 试试。",
+  "agents.empty": "还没有 Agent 任务——打开一个事项，把它委派给 Agent 试试。",
   "agents.status.queued": "排队中",
   "agents.status.working": "工作中",
   "agents.status.needsReview": "待审查",
@@ -19862,10 +19925,10 @@ var zh = {
   "data.title": "数据",
   "data.export": "导出备份 (JSON)",
   "data.import": "导入备份…",
-  "data.hint": "所有数据保存在当前浏览器。建议定期导出备份,可在任何设备恢复。",
+  "data.hint": "所有数据保存在当前浏览器。建议定期导出备份，可在任何设备恢复。",
   "github.token": "GitHub token(repo 权限)",
   "github.repo": "GitHub 仓库",
-  "github.hint": "两项都填写后,委派的任务会读取这个真实仓库,批准即推送分支并创建 Pull Request。token 仅保存在你的浏览器。",
+  "github.hint": "两项都填写后，委派的任务会读取这个真实仓库，批准即推送分支并创建 Pull Request。token 仅保存在你的浏览器。",
   "agents.status.applying": "应用中",
   "task.applying": "正在推送到 GitHub…",
   "task.viewPr": "查看 Pull Request",
@@ -19908,23 +19971,23 @@ var zh = {
   "executor.agent": "Agent",
   "activity.created": "你创建了此事项",
   "activity.delegated": "已委派给 Agent",
-  "activity.finished": "Agent 已完成,等待审查",
+  "activity.finished": "Agent 已完成，等待审查",
   "activity.approved": "你批准并应用了变更",
   "activity.prCreated": "Pull Request 已创建",
   "activity.failed": "Agent 任务失败",
   "inbox.empty": "全部处理完了——没有需要你关注的事。",
-  "inbox.kind.welcome": "先到 设置 配置 AI 提供方和 GitHub 仓库,然后委派一条示例事项,体验完整闭环。",
-  "inbox.kind.needsReview": "Agent 已完成,请审查变更",
+  "inbox.kind.welcome": "先到 设置 配置 AI 提供方和 GitHub 仓库，然后委派一条示例事项，体验完整闭环。",
+  "inbox.kind.needsReview": "Agent 已完成，请审查变更",
   "inbox.kind.applied": "变更已批准并应用",
   "inbox.kind.prCreated": "Pull Request 已创建",
   "inbox.kind.failed": "Agent 任务失败",
   "reviews.empty": "没有待审查的任务。先把一条事项委派给 Agent。",
   "projects.repos": "GitHub 仓库",
-  "projects.reposDesc": "你的真实仓库。点击任意一个设为当前工作仓库,之后委派的任务将读取它的代码。",
+  "projects.reposDesc": "你的真实仓库。点击任意一个设为当前工作仓库，之后委派的任务将读取它的代码。",
   "projects.connectGithub": "去设置连接 GitHub",
   "projects.current": "当前",
   "projects.local": "本地项目",
-  "projects.localDesc": "给事项做轻量分组,进度自动统计。",
+  "projects.localDesc": "给事项做轻量分组，进度自动统计。",
   "projects.namePlaceholder": "新项目名称…",
   "projects.localEmpty": "还没有项目。"
 };
@@ -20552,30 +20615,14 @@ var Moon = ({ size = 14 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
     strokeLinejoin: "round"
   }, undefined, false, undefined, this)
 }, undefined, false, undefined, this);
-var Gear = ({ size = 14 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
-  size,
-  children: [
-    /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("circle", {
-      cx: "8",
-      cy: "8",
-      r: "2.2",
-      stroke: "currentColor",
-      strokeWidth: "1.3"
-    }, undefined, false, undefined, this),
-    /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
-      d: "M8 1.8l.9 1.8 2-.3 1 1.7 1.7 1-.3 2 1.5 1.3-1.5 1.3.3 2-1.7 1-1 1.7-2-.3-.9 1.8-.9-1.8-2 .3-1-1.7-1.7-1 .3-2L1.2 8l1.5-1.3-.3-2 1.7-1 1-1.7 2 .3L8 1.8Z",
-      stroke: "currentColor",
-      strokeWidth: "1.1",
-      strokeLinejoin: "round"
-    }, undefined, false, undefined, this)
-  ]
-}, undefined, true, undefined, this);
 
 // src/components/Sidebar.tsx
 var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
 var REPO_URL = "https://github.com/kongbaifan/linear_app";
 function UserMenu({
   locale,
+  theme,
+  onToggleTheme,
   onNavigate,
   onSetLocale,
   onInstallApp
@@ -20657,6 +20704,24 @@ function UserMenu({
               onNavigate({ type: "settings" });
             }
           }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+            className: "menu-item",
+            onClick: onToggleTheme,
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+                className: "menu-item-label",
+                children: t("action.toggleTheme")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+                style: { color: "var(--text-3)", display: "inline-flex" },
+                children: theme === "dark" ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Sun, {
+                  size: 12
+                }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Moon, {
+                  size: 12
+                }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Item, {
             label: t("action.language"),
             chevron: true,
@@ -20790,30 +20855,6 @@ function Sidebar({
             children: [
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
                 className: "icon-btn",
-                title: t("settings.title"),
-                onClick: () => onNavigate({ type: "settings" }),
-                children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Gear, {
-                  size: 14
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-                className: "icon-btn lang-btn",
-                title: t("action.language"),
-                onClick: onToggleLocale,
-                children: locale === "en" ? "中" : "EN"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-                className: "icon-btn",
-                title: t("action.toggleTheme"),
-                onClick: onToggleTheme,
-                children: theme === "dark" ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Sun, {
-                  size: 14
-                }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Moon, {
-                  size: 14
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-                className: "icon-btn",
                 title: t("action.search"),
                 children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Search, {}, undefined, false, undefined, this)
               }, undefined, false, undefined, this),
@@ -20936,6 +20977,8 @@ function Sidebar({
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(UserMenu, {
         locale,
+        theme,
+        onToggleTheme,
         onNavigate,
         onSetLocale,
         onInstallApp
@@ -21257,28 +21300,6 @@ function IssueList({
               !board && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
                 className: "shortcut-hints",
                 children: [
-                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                    className: "kbd",
-                    children: "J"
-                  }, undefined, false, undefined, this),
-                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                    className: "kbd",
-                    children: "K"
-                  }, undefined, false, undefined, this),
-                  " ",
-                  t("list.hint.navigate"),
-                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                    className: "kbd",
-                    children: "↵"
-                  }, undefined, false, undefined, this),
-                  " ",
-                  t("list.hint.open"),
-                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                    className: "kbd",
-                    children: "C"
-                  }, undefined, false, undefined, this),
-                  " ",
-                  t("list.hint.new"),
                   /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
                     className: "kbd",
                     children: "⌘K"
@@ -23295,7 +23316,7 @@ function sampleIssues() {
       labels: [{ name: "性能", color: "#4ea7fc" }],
       executor: "agent",
       project: SAMPLE_PROJECT_ID,
-      description: '内置虚拟代码库里的 AppBoot.swift 在启动时阻塞等待完整状态同步。试试点右侧"委派给 Agent",看它如何改成最小状态先渲染、后台补全同步,然后审查它产出的 diff。',
+      description: '内置虚拟代码库里的 AppBoot.swift 在启动时阻塞等待完整状态同步。试试点右侧"委派给 Agent",看它如何改成最小状态先渲染、后台补全同步，然后审查它产出的 diff。',
       createdAt: now - 3600000,
       sample: true
     },
@@ -23319,7 +23340,7 @@ function sampleIssues() {
       labels: [{ name: "上手", color: "#26b5ce" }],
       executor: "me",
       project: SAMPLE_PROJECT_ID,
-      description: '打开 设置(Ctrl+,):在 AI 提供方里配置 Anthropic 或任意 OpenAI 兼容中转站;在 GitHub 区填入 token 和仓库。之后委派的任务将读取真实代码,批准后自动开分支提 PR。完成后可在设置里"重置演示数据"清掉这些示例。',
+      description: '打开 设置(Ctrl+,):在 AI 提供方里配置 Anthropic 或任意 OpenAI 兼容中转站;在 GitHub 区填入 token 和仓库。之后委派的任务将读取真实代码，批准后自动开分支提 PR。完成后可在设置里"重置演示数据"清掉这些示例。',
       createdAt: now - 10800000,
       sample: true
     }

@@ -56,7 +56,7 @@ export function sampleIssues(): Issue[] {
       executor: 'agent',
       project: SAMPLE_PROJECT_ID,
       description:
-        '内置虚拟代码库里的 AppBoot.swift 在启动时阻塞等待完整状态同步。试试点右侧"委派给 Agent",看它如何改成最小状态先渲染、后台补全同步,然后审查它产出的 diff。',
+        '内置虚拟代码库里的 AppBoot.swift 在启动时阻塞等待完整状态同步。试试点右侧"委派给 Agent",看它如何改成最小状态先渲染、后台补全同步，然后审查它产出的 diff。',
       createdAt: now - 3600_000,
       sample: true,
     },
@@ -81,7 +81,7 @@ export function sampleIssues(): Issue[] {
       executor: 'me',
       project: SAMPLE_PROJECT_ID,
       description:
-        '打开 设置(Ctrl+,):在 AI 提供方里配置 Anthropic 或任意 OpenAI 兼容中转站;在 GitHub 区填入 token 和仓库。之后委派的任务将读取真实代码,批准后自动开分支提 PR。完成后可在设置里"重置演示数据"清掉这些示例。',
+        '打开 设置(Ctrl+,):在 AI 提供方里配置 Anthropic 或任意 OpenAI 兼容中转站;在 GitHub 区填入 token 和仓库。之后委派的任务将读取真实代码，批准后自动开分支提 PR。完成后可在设置里"重置演示数据"清掉这些示例。',
       createdAt: now - 10_800_000,
       sample: true,
     },
