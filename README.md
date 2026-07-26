@@ -9,6 +9,8 @@ Linage — 类 Linear 交互品质的项目管理 + AI Agent 工作台(React 演
 - **Diff 审查** — 文件 diff 卡片(行号、红删绿增高亮、语法着色)、Activity/Guide/Diff 标签页、右侧嵌入式 Agent 会话面板
 - **AI Agent 面板** — 详情页右下角浮动窗口(可最小化/放大/关闭,输入消息有打字动画回复),diff 页右侧嵌入面板(工作状态折叠、引用提问、实时 Working 状态)
 - **Agent 工作台** — `#/agents` 任务队列:在事项详情点"委派给 Agent"创建任务,引擎驱动 排队→工作中(步骤实时流出)→待审查→批准应用,任务持久化。Provider 可插拔(`src/agent/provider.ts`):默认内置模拟引擎;在 Agent 设置里填入自己的 Anthropic API key 即走真实 Claude API(浏览器直连,key 仅存本地,失败自动回退模拟)
+- **PWA + 数据备份** — 可安装为桌面/手机独立应用(manifest + Service Worker 缓存优先,离线可用);Agent 设置里可一键导出全部数据为 JSON 备份、导入恢复(数据仅存浏览器本地,建议定期导出)
+- **GitHub 真实仓库模式** — 在 Agent 设置里填 GitHub token(repo 权限)+ 仓库名(owner/repo)后,委派的任务改为读取你的真实仓库:按 issue 相关性挑选源文件 → Agent 生成变更 → diff 审查 → 批准即自动开分支(`linage/task-*`)、提交、创建 Pull Request 并给出链接。全程纯前端直连 GitHub API,token 仅存浏览器。清空配置即回到内置虚拟代码库模式
 - **真实代码变更闭环** — Agent 针对内置虚拟代码库(`src/data/codebase.ts`,存 store 可持久化)返回结构化 find/replace 编辑;前端用行级 LCS diff(`src/agent/diff.ts`)计算红删绿增并渲染进 `#/task/:id` 审查视图(hunk 折叠、+N -N 统计);"批准并应用"真实写回代码库,后续任务基于更新后的代码工作
 
 ## 部署

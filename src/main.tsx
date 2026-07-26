@@ -8,3 +8,10 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// PWA: register the service worker (skipped on file:// previews and in dev).
+if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !import.meta.env?.DEV) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}

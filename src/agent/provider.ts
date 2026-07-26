@@ -140,7 +140,28 @@ const defaultPlaybook: Playbook = {
 export const simulatedProvider: AgentProvider = {
   async run(input) {
     const pb = playbooks.find((p) => p.match.test(input.title)) ?? defaultPlaybook
-    return { steps: pb.steps, summary: pb.summary, edits: pb.edits }
+    const applicable = pb.edits.some((e) => input.codebase[e.path]?.includes(e.find))
+    if (applicable) return { steps: pb.steps, summary: pb.summary, edits: pb.edits }
+
+    // Unknown codebase (e.g. a real GitHub repo without an API key):
+    // make a deterministic, clearly-visible edit to the most central file.
+    const paths = Object.keys(input.codebase)
+    const path = paths.find((p) => /readme/i.test(p)) ?? paths[0]
+    const content = input.codebase[path]
+    const firstLine = content.split('\n')[0]
+    const marker = path.endsWith('.md')
+      ? `\n> Reviewed by Linage agent for ${input.issueId}: ${input.title}`
+      : `\n// Linage agent (${input.issueId}): ${input.title} — starting point identified here.`
+    return {
+      steps: [
+        `Scanned ${paths.length} files for relevant code`,
+        `Selected ${path} as the entry point`,
+        'Drafted a marker change for review',
+        'No API key configured — running in simulation mode',
+      ],
+      summary: `Simulation mode: proposed a marker edit in ${path}. Add an Anthropic API key in Agent settings to let Claude produce a real change.`,
+      edits: [{ path, find: firstLine, replace: firstLine + marker }],
+    }
   },
 }
 

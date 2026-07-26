@@ -2273,3 +2273,8 @@ body,
   font-weight: 550;
   padding: 0 8px;
 }
+
+.repo-badge {
+  color: var(--accent-text);
+  border-color: rgba(94, 106, 210, 0.4);
+}

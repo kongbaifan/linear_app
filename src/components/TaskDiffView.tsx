@@ -79,6 +79,7 @@ export default function TaskDiffView({
           <span className="diff-stat-del">-{removed}</span>
         </div>
         <div className="panel-header-right">
+          {task.repo && <span className="model-badge repo-badge">{task.repo}</span>}
           <span className="model-badge">{task.model}</span>
         </div>
       </header>
@@ -89,14 +90,33 @@ export default function TaskDiffView({
           <button className="btn" onClick={onBack}>
             {t('task.back')}
           </button>
-          {task.status === 'needsReview' ? (
+          {task.status === 'needsReview' && (
             <button className="btn primary" onClick={onApprove}>
               {t('task.approve')}
             </button>
-          ) : (
-            <span className="applied-chip">
-              <StatusDone size={13} />
-              {t('task.applied')}
+          )}
+          {task.status === 'applying' && (
+            <span className="applied-chip" style={{ color: 'var(--text-2)' }}>
+              <span className="spinner" />
+              {t('task.applying')}
+            </span>
+          )}
+          {task.status === 'done' && (
+            <>
+              <span className="applied-chip">
+                <StatusDone size={13} />
+                {t('task.applied')}
+              </span>
+              {task.prUrl && (
+                <a className="btn primary" href={task.prUrl} target="_blank" rel="noreferrer">
+                  {t('task.viewPr')} ↗
+                </a>
+              )}
+            </>
+          )}
+          {task.status === 'failed' && (
+            <span className="applied-chip" style={{ color: 'var(--red)' }}>
+              {t('agents.status.failed')}
             </span>
           )}
         </div>

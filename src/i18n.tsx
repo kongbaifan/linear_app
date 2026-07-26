@@ -131,6 +131,16 @@ const en = {
   'task.approve': 'Approve & apply',
   'task.applied': 'Applied',
   'task.back': 'Back',
+  'data.title': 'Data',
+  'data.export': 'Export backup (JSON)',
+  'data.import': 'Import backup…',
+  'data.hint': 'Everything lives in this browser. Export regularly to keep a backup you can restore anywhere.',
+  'github.token': 'GitHub token (repo scope)',
+  'github.repo': 'GitHub repository',
+  'github.hint': 'When both are set, delegated tasks read this real repository, and approving pushes a branch + opens a pull request. The token stays in your browser.',
+  'agents.status.applying': 'Applying',
+  'task.applying': 'Pushing to GitHub…',
+  'task.viewPr': 'View pull request',
 }
 
 export type MessageKey = keyof typeof en
@@ -249,6 +259,16 @@ const zh: Record<MessageKey, string> = {
   'task.approve': '批准并应用',
   'task.applied': '已应用',
   'task.back': '返回',
+  'data.title': '数据',
+  'data.export': '导出备份 (JSON)',
+  'data.import': '导入备份…',
+  'data.hint': '所有数据保存在当前浏览器。建议定期导出备份,可在任何设备恢复。',
+  'github.token': 'GitHub token(repo 权限)',
+  'github.repo': 'GitHub 仓库',
+  'github.hint': '两项都填写后,委派的任务会读取这个真实仓库,批准即推送分支并创建 Pull Request。token 仅保存在你的浏览器。',
+  'agents.status.applying': '应用中',
+  'task.applying': '正在推送到 GitHub…',
+  'task.viewPr': '查看 Pull Request',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }

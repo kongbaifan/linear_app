@@ -4,6 +4,7 @@
 import { useEffect, useRef } from 'react'
 import type { Action, AppState, FileChange } from '../store'
 import { pickProvider, simulatedProvider, type AgentEdit } from './provider'
+import { fetchRepoFiles } from './github'
 
 const STEP_DELAY_MS = 1300
 
@@ -54,8 +55,31 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
     queued.forEach((task) => {
       running.current.add(task.id)
       dispatch({ type: 'agentStatus', id: task.id, status: 'working' })
-      const codebase = { ...state.codebase }
       ;(async () => {
+        let codebase = { ...state.codebase }
+        let baseBranch: string | undefined
+        if (task.target === 'github' && task.repo) {
+          dispatch({ type: 'agentStep', id: task.id, step: `Connecting to ${task.repo}…` })
+          try {
+            const fetched = await fetchRepoFiles(state.settings.githubToken, task.repo, task.title)
+            codebase = fetched.codebase
+            baseBranch = fetched.baseBranch
+            dispatch({
+              type: 'agentStep',
+              id: task.id,
+              step: `Fetched ${Object.keys(codebase).length} files from ${task.repo}@${baseBranch}`,
+            })
+          } catch (e) {
+            dispatch({
+              type: 'agentStatus',
+              id: task.id,
+              status: 'failed',
+              summary: `Could not read ${task.repo}: ${e instanceof Error ? e.message : String(e)}`,
+            })
+            running.current.delete(task.id)
+            return
+          }
+        }
         const input = {
           issueId: task.issueId,
           title: task.title,
@@ -80,6 +104,7 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
           id: task.id,
           summary: result.summary,
           changes: resolveEdits(codebase, result.edits, task.id),
+          baseBranch,
         })
         running.current.delete(task.id)
       })()

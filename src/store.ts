@@ -15,7 +15,7 @@ import { initialCodebase } from './data/codebase'
 
 export type Theme = 'dark' | 'light'
 
-export type AgentTaskStatus = 'queued' | 'working' | 'needsReview' | 'done' | 'failed'
+export type AgentTaskStatus = 'queued' | 'working' | 'needsReview' | 'applying' | 'done' | 'failed'
 
 export interface FileChange {
   path: string
@@ -32,6 +32,11 @@ export interface AgentTask {
   steps: string[]
   summary?: string
   changes?: FileChange[]
+  target: 'virtual' | 'github'
+  repo?: string
+  baseBranch?: string
+  branch?: string
+  prUrl?: string
   createdAt: number
   finishedAt?: number
 }
@@ -39,6 +44,8 @@ export interface AgentTask {
 export interface AgentSettings {
   apiKey: string
   model: string
+  githubToken: string
+  githubRepo: string
 }
 
 export const DEFAULT_AGENT_MODEL = 'claude-sonnet-4-5'
@@ -64,9 +71,11 @@ export type Action =
   | { type: 'delegate'; task: AgentTask }
   | { type: 'agentStep'; id: string; step: string }
   | { type: 'agentStatus'; id: string; status: AgentTaskStatus; summary?: string }
-  | { type: 'agentResult'; id: string; summary: string; changes: FileChange[] }
+  | { type: 'agentResult'; id: string; summary: string; changes: FileChange[]; baseBranch?: string }
   | { type: 'applyChanges'; id: string }
+  | { type: 'githubApplied'; id: string; prUrl: string; branch: string }
   | { type: 'setSettings'; settings: Partial<AgentSettings> }
+  | { type: 'importState'; data: unknown }
   | { type: 'reset' }
 
 const STORAGE_KEY = 'linear-clone-state-v1'
@@ -78,8 +87,32 @@ function defaultState(): AppState {
     theme: 'dark',
     locale: 'en',
     agentTasks: [],
-    settings: { apiKey: '', model: DEFAULT_AGENT_MODEL },
+    settings: { apiKey: '', model: DEFAULT_AGENT_MODEL, githubToken: '', githubRepo: '' },
     codebase: { ...initialCodebase },
+  }
+}
+
+/** Coerce arbitrary parsed JSON into a valid AppState (defaults on bad shape). */
+export function sanitizeState(parsed: any): AppState {
+  if (!parsed || !Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
+    return defaultState()
+  }
+  return {
+    issues: parsed.issues,
+    notifications: parsed.notifications,
+    theme: parsed.theme === 'light' ? 'light' : 'dark',
+    locale: parsed.locale === 'zh' ? 'zh' : 'en',
+    agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
+    settings: {
+      apiKey: typeof parsed.settings?.apiKey === 'string' ? parsed.settings.apiKey : '',
+      model: typeof parsed.settings?.model === 'string' ? parsed.settings.model : DEFAULT_AGENT_MODEL,
+      githubToken: typeof parsed.settings?.githubToken === 'string' ? parsed.settings.githubToken : '',
+      githubRepo: typeof parsed.settings?.githubRepo === 'string' ? parsed.settings.githubRepo : '',
+    },
+    codebase:
+      parsed.codebase && typeof parsed.codebase === 'object'
+        ? { ...initialCodebase, ...parsed.codebase }
+        : { ...initialCodebase },
   }
 }
 
@@ -87,28 +120,14 @@ function loadState(): AppState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return defaultState()
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
-      return defaultState()
-    }
-    return {
-      issues: parsed.issues,
-      notifications: parsed.notifications,
-      theme: parsed.theme === 'light' ? 'light' : 'dark',
-      locale: parsed.locale === 'zh' ? 'zh' : 'en',
-      agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
-      settings: {
-        apiKey: typeof parsed.settings?.apiKey === 'string' ? parsed.settings.apiKey : '',
-        model: typeof parsed.settings?.model === 'string' ? parsed.settings.model : DEFAULT_AGENT_MODEL,
-      },
-      codebase:
-        parsed.codebase && typeof parsed.codebase === 'object'
-          ? { ...initialCodebase, ...parsed.codebase }
-          : { ...initialCodebase },
-    }
+    return sanitizeState(JSON.parse(raw))
   } catch {
     return defaultState()
   }
+}
+
+export function serializeState(state: AppState): string {
+  return JSON.stringify(state, null, 2)
 }
 
 function saveState(state: AppState) {
@@ -195,8 +214,18 @@ export function reducer(state: AppState, action: Action): AppState {
                 status: 'needsReview' as const,
                 summary: action.summary,
                 changes: action.changes,
+                baseBranch: action.baseBranch ?? t.baseBranch,
                 finishedAt: Date.now(),
               }
+            : t,
+        ),
+      }
+    case 'githubApplied':
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id
+            ? { ...t, status: 'done' as const, prUrl: action.prUrl, branch: action.branch }
             : t,
         ),
       }
@@ -217,6 +246,8 @@ export function reducer(state: AppState, action: Action): AppState {
     }
     case 'setSettings':
       return { ...state, settings: { ...state.settings, ...action.settings } }
+    case 'importState':
+      return sanitizeState(action.data)
     case 'reset':
       return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings }
     default:

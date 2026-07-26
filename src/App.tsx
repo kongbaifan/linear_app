@@ -15,7 +15,8 @@ import { useAgentEngine } from './agent/engine'
 import type { Issue } from './data/mock'
 import { statusOrder } from './components/meta'
 import { useHashRoute, type View } from './router'
-import { nextIssueId, useAppStore } from './store'
+import { nextIssueId, serializeState, useAppStore, type AgentTask } from './store'
+import { applyToGitHub } from './agent/github'
 import { I18nProvider } from './i18n'
 
 export type { View }
@@ -94,6 +95,8 @@ export default function App() {
 
   useAgentEngine(state, dispatch)
 
+  const githubMode = !!(state.settings.githubToken && state.settings.githubRepo)
+
   const delegateIssue = (issue: Issue) => {
     dispatch({
       type: 'delegate',
@@ -104,9 +107,37 @@ export default function App() {
         status: 'queued',
         model: state.settings.model,
         steps: [],
+        target: githubMode ? 'github' : 'virtual',
+        repo: githubMode ? state.settings.githubRepo : undefined,
         createdAt: Date.now(),
       },
     })
+  }
+
+  const approveTask = (task: AgentTask) => {
+    if (task.target !== 'github') {
+      dispatch({ type: 'applyChanges', id: task.id })
+      return
+    }
+    const branch = `linage/${task.id}`
+    dispatch({ type: 'agentStatus', id: task.id, status: 'applying' })
+    applyToGitHub(
+      state.settings.githubToken,
+      task.repo!,
+      task.baseBranch ?? 'main',
+      branch,
+      task.changes ?? [],
+      `Linage: ${task.title} (${task.issueId})`,
+    )
+      .then((prUrl) => dispatch({ type: 'githubApplied', id: task.id, prUrl, branch }))
+      .catch((e) =>
+        dispatch({
+          type: 'agentStatus',
+          id: task.id,
+          status: 'failed',
+          summary: `Push failed: ${e instanceof Error ? e.message : String(e)}`,
+        }),
+      )
   }
 
   const toggleTheme = () =>
@@ -170,7 +201,10 @@ export default function App() {
             tasks={state.agentTasks}
             onOpenIssue={openIssue}
             onOpenTask={(id) => navigate({ type: 'task', id })}
-            onApprove={(id) => dispatch({ type: 'applyChanges', id })}
+            onApprove={(id) => {
+              const task = state.agentTasks.find((a) => a.id === id)
+              if (task) approveTask(task)
+            }}
             onOpenSettings={() => setSettingsOpen(true)}
           />
         )}
@@ -181,7 +215,7 @@ export default function App() {
             <TaskDiffView
               task={task}
               onBack={() => navigate({ type: 'agents' })}
-              onApprove={() => dispatch({ type: 'applyChanges', id: task.id })}
+              onApprove={() => approveTask(task)}
               onOpenIssue={openIssue}
             />
           )
@@ -228,6 +262,25 @@ export default function App() {
           settings={state.settings}
           onSave={(s) => dispatch({ type: 'setSettings', settings: s })}
           onClose={() => setSettingsOpen(false)}
+          onExport={() => {
+            const blob = new Blob([serializeState(state)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `linage-backup-${new Date().toISOString().slice(0, 10)}.json`
+            a.click()
+            URL.revokeObjectURL(url)
+          }}
+          onImport={(file) => {
+            file.text().then((text) => {
+              try {
+                dispatch({ type: 'importState', data: JSON.parse(text) })
+                setSettingsOpen(false)
+              } catch {
+                // invalid file — ignore
+              }
+            })
+          }}
         />
       )}
     </div>

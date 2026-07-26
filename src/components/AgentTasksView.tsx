@@ -8,6 +8,7 @@ const statusKey: Record<AgentTaskStatus, MessageKey> = {
   queued: 'agents.status.queued',
   working: 'agents.status.working',
   needsReview: 'agents.status.needsReview',
+  applying: 'agents.status.applying',
   done: 'agents.status.done',
   failed: 'agents.status.failed',
 }
@@ -16,6 +17,7 @@ const statusColor: Record<AgentTaskStatus, string> = {
   queued: 'var(--text-3)',
   working: 'var(--yellow)',
   needsReview: 'var(--accent-text)',
+  applying: 'var(--yellow)',
   done: 'var(--green)',
   failed: 'var(--red)',
 }
@@ -71,7 +73,7 @@ export default function AgentTasksView({
                 onClick={() => setExpanded(isOpen ? null : task.id)}
               >
                 <span className="agent-task-status" style={{ color: statusColor[task.status] }}>
-                  {task.status === 'working' ? (
+                  {task.status === 'working' || task.status === 'applying' ? (
                     <Spinner />
                   ) : task.status === 'done' ? (
                     <StatusDone size={13} />
@@ -93,8 +95,20 @@ export default function AgentTasksView({
                 </span>
                 <span className="agent-task-title">{task.title}</span>
                 <span className="issue-row-spacer" />
+                {task.repo && <span className="model-badge repo-badge">{task.repo}</span>}
                 <span className="model-badge">{task.model}</span>
                 <span className="agent-task-time">{elapsed(task)}</span>
+                {task.prUrl && (
+                  <a
+                    className="btn sm"
+                    href={task.prUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    PR ↗
+                  </a>
+                )}
                 {task.status === 'needsReview' && (
                   <>
                     <button

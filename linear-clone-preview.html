@@ -2250,6 +2250,11 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
   font-size: 12.5px;
   font-weight: 550;
 }
+
+.repo-badge {
+  color: var(--accent-text);
+  border-color: #5e6ad266;
+}
 </style></head><body><div id="root"></div><script type="module">var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
@@ -4171,9 +4176,9 @@ var require_react_dom_client_development = __commonJS((exports) => {
               if (typeof entry.name === "string") {
                 var JSCompiler_temp_const = info;
                 a: {
-                  var { name, env, debugLocation: location } = entry;
-                  if (location != null) {
-                    var childStack = formatOwnerStack(location), idx = childStack.lastIndexOf(`
+                  var { name, env, debugLocation: location2 } = entry;
+                  if (location2 != null) {
+                    var childStack = formatOwnerStack(location2), idx = childStack.lastIndexOf(`
 `), lastLine = idx === -1 ? childStack : childStack.slice(idx + 1);
                     if (lastLine.indexOf(name) !== -1) {
                       var JSCompiler_inline_result = `
@@ -19365,7 +19370,6 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
     module.exports = react_jsx_dev_runtime_development;
   }
 });
-
 // src/main.tsx
 var import_react16 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
@@ -19479,7 +19483,17 @@ var en = {
   "palette.goAgents": "Go to Agent tasks",
   "task.approve": "Approve & apply",
   "task.applied": "Applied",
-  "task.back": "Back"
+  "task.back": "Back",
+  "data.title": "Data",
+  "data.export": "Export backup (JSON)",
+  "data.import": "Import backup…",
+  "data.hint": "Everything lives in this browser. Export regularly to keep a backup you can restore anywhere.",
+  "github.token": "GitHub token (repo scope)",
+  "github.repo": "GitHub repository",
+  "github.hint": "When both are set, delegated tasks read this real repository, and approving pushes a branch + opens a pull request. The token stays in your browser.",
+  "agents.status.applying": "Applying",
+  "task.applying": "Pushing to GitHub…",
+  "task.viewPr": "View pull request"
 };
 var zh = {
   "nav.inbox": "收件箱",
@@ -19584,7 +19598,17 @@ var zh = {
   "palette.goAgents": "前往 Agent 任务",
   "task.approve": "批准并应用",
   "task.applied": "已应用",
-  "task.back": "返回"
+  "task.back": "返回",
+  "data.title": "数据",
+  "data.export": "导出备份 (JSON)",
+  "data.import": "导入备份…",
+  "data.hint": "所有数据保存在当前浏览器。建议定期导出备份,可在任何设备恢复。",
+  "github.token": "GitHub token(repo 权限)",
+  "github.repo": "GitHub 仓库",
+  "github.hint": "两项都填写后,委派的任务会读取这个真实仓库,批准即推送分支并创建 Pull Request。token 仅保存在你的浏览器。",
+  "agents.status.applying": "应用中",
+  "task.applying": "正在推送到 GitHub…",
+  "task.viewPr": "查看 Pull Request"
 };
 var dictionaries = { en, zh };
 function translate(locale, key) {
@@ -23291,6 +23315,7 @@ var statusKey = {
   queued: "agents.status.queued",
   working: "agents.status.working",
   needsReview: "agents.status.needsReview",
+  applying: "agents.status.applying",
   done: "agents.status.done",
   failed: "agents.status.failed"
 };
@@ -23298,6 +23323,7 @@ var statusColor = {
   queued: "var(--text-3)",
   working: "var(--yellow)",
   needsReview: "var(--accent-text)",
+  applying: "var(--yellow)",
   done: "var(--green)",
   failed: "var(--red)"
 };
@@ -23365,7 +23391,7 @@ function AgentTasksView({
                       className: "agent-task-status",
                       style: { color: statusColor[task.status] },
                       children: [
-                        task.status === "working" ? /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Spinner, {}, undefined, false, undefined, this) : task.status === "done" ? /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(StatusDone, {
+                        task.status === "working" || task.status === "applying" ? /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Spinner, {}, undefined, false, undefined, this) : task.status === "done" ? /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(StatusDone, {
                           size: 13
                         }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
                           className: "chip-dot",
@@ -23393,6 +23419,10 @@ function AgentTasksView({
                     /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
                       className: "issue-row-spacer"
                     }, undefined, false, undefined, this),
+                    task.repo && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                      className: "model-badge repo-badge",
+                      children: task.repo
+                    }, undefined, false, undefined, this),
                     /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
                       className: "model-badge",
                       children: task.model
@@ -23400,6 +23430,14 @@ function AgentTasksView({
                     /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
                       className: "agent-task-time",
                       children: elapsed(task)
+                    }, undefined, false, undefined, this),
+                    task.prUrl && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("a", {
+                      className: "btn sm",
+                      href: task.prUrl,
+                      target: "_blank",
+                      rel: "noreferrer",
+                      onClick: (e) => e.stopPropagation(),
+                      children: "PR ↗"
                     }, undefined, false, undefined, this),
                     task.status === "needsReview" && /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(jsx_dev_runtime16.Fragment, {
                       children: [
@@ -23685,11 +23723,17 @@ function TaskDiffView({
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
             className: "panel-header-right",
-            children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
-              className: "model-badge",
-              children: task.model
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this)
+            children: [
+              task.repo && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "model-badge repo-badge",
+                children: task.repo
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "model-badge",
+                children: task.model
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
@@ -23707,19 +23751,49 @@ function TaskDiffView({
                 onClick: onBack,
                 children: t("task.back")
               }, undefined, false, undefined, this),
-              task.status === "needsReview" ? /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+              task.status === "needsReview" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
                 className: "btn primary",
                 onClick: onApprove,
                 children: t("task.approve")
-              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              }, undefined, false, undefined, this),
+              task.status === "applying" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
                 className: "applied-chip",
+                style: { color: "var(--text-2)" },
                 children: [
-                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(StatusDone, {
-                    size: 13
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                    className: "spinner"
                   }, undefined, false, undefined, this),
-                  t("task.applied")
+                  t("task.applying")
                 ]
-              }, undefined, true, undefined, this)
+              }, undefined, true, undefined, this),
+              task.status === "done" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(jsx_dev_runtime17.Fragment, {
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                    className: "applied-chip",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(StatusDone, {
+                        size: 13
+                      }, undefined, false, undefined, this),
+                      t("task.applied")
+                    ]
+                  }, undefined, true, undefined, this),
+                  task.prUrl && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("a", {
+                    className: "btn primary",
+                    href: task.prUrl,
+                    target: "_blank",
+                    rel: "noreferrer",
+                    children: [
+                      t("task.viewPr"),
+                      " ↗"
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              task.status === "failed" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "applied-chip",
+                style: { color: "var(--red)" },
+                children: t("agents.status.failed")
+              }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this)
         ]
@@ -23741,11 +23815,16 @@ var MODEL_OPTIONS = ["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"]
 function SettingsModal({
   settings,
   onSave,
-  onClose
+  onClose,
+  onExport,
+  onImport
 }) {
+  const fileRef = import_react11.useRef(null);
   const { t } = useI18n();
   const [apiKey, setApiKey] = import_react11.useState(settings.apiKey);
   const [model, setModel] = import_react11.useState(settings.model);
+  const [githubToken, setGithubToken] = import_react11.useState(settings.githubToken);
+  const [githubRepo, setGithubRepo] = import_react11.useState(settings.githubRepo);
   import_react11.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -23793,6 +23872,66 @@ function SettingsModal({
             value: m
           }, m, false, undefined, this))
         }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+          className: "settings-label",
+          children: t("github.token")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+          className: "settings-input",
+          type: "password",
+          placeholder: "ghp_… / github_pat_…",
+          value: githubToken,
+          onChange: (e) => setGithubToken(e.target.value)
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+          className: "settings-label",
+          children: t("github.repo")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+          className: "settings-input",
+          placeholder: "owner/repository",
+          value: githubRepo,
+          onChange: (e) => setGithubRepo(e.target.value)
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+          className: "settings-hint",
+          children: t("github.hint")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+          className: "settings-label",
+          children: t("data.title")
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+          style: { display: "flex", gap: 8 },
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+              className: "btn sm",
+              onClick: onExport,
+              children: t("data.export")
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+              className: "btn sm",
+              onClick: () => fileRef.current?.click(),
+              children: t("data.import")
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+              ref: fileRef,
+              type: "file",
+              accept: "application/json",
+              style: { display: "none" },
+              onChange: (e) => {
+                const f = e.target.files?.[0];
+                if (f)
+                  onImport(f);
+                e.target.value = "";
+              }
+            }, undefined, false, undefined, this)
+          ]
+        }, undefined, true, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+          className: "settings-hint",
+          children: t("data.hint")
+        }, undefined, false, undefined, this),
         /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
           className: "modal-footer",
           children: [
@@ -23804,7 +23943,12 @@ function SettingsModal({
             /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
               className: "btn primary",
               onClick: () => {
-                onSave({ apiKey: apiKey.trim(), model: model.trim() || settings.model });
+                onSave({
+                  apiKey: apiKey.trim(),
+                  model: model.trim() || settings.model,
+                  githubToken: githubToken.trim(),
+                  githubRepo: githubRepo.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "")
+                });
                 onClose();
               },
               children: t("agents.save")
@@ -23915,7 +24059,27 @@ var defaultPlaybook = {
 var simulatedProvider = {
   async run(input) {
     const pb = playbooks.find((p) => p.match.test(input.title)) ?? defaultPlaybook;
-    return { steps: pb.steps, summary: pb.summary, edits: pb.edits };
+    const applicable = pb.edits.some((e) => input.codebase[e.path]?.includes(e.find));
+    if (applicable)
+      return { steps: pb.steps, summary: pb.summary, edits: pb.edits };
+    const paths = Object.keys(input.codebase);
+    const path = paths.find((p) => /readme/i.test(p)) ?? paths[0];
+    const content = input.codebase[path];
+    const firstLine = content.split(`
+`)[0];
+    const marker = path.endsWith(".md") ? `
+> Reviewed by Linage agent for ${input.issueId}: ${input.title}` : `
+// Linage agent (${input.issueId}): ${input.title} — starting point identified here.`;
+    return {
+      steps: [
+        `Scanned ${paths.length} files for relevant code`,
+        `Selected ${path} as the entry point`,
+        "Drafted a marker change for review",
+        "No API key configured — running in simulation mode"
+      ],
+      summary: `Simulation mode: proposed a marker edit in ${path}. Add an Anthropic API key in Agent settings to let Claude produce a real change.`,
+      edits: [{ path, find: firstLine, replace: firstLine + marker }]
+    };
   }
 };
 var anthropicProvider = {
@@ -23973,6 +24137,104 @@ function pickProvider(apiKey) {
   return apiKey ? anthropicProvider : simulatedProvider;
 }
 
+// src/agent/github.ts
+var API = "https://api.github.com";
+async function gh(token, path, init) {
+  const res = await fetch(`${API}${path}`, {
+    ...init,
+    headers: {
+      accept: "application/vnd.github+json",
+      authorization: `Bearer ${token}`,
+      ...init?.headers ?? {}
+    }
+  });
+  if (!res.ok)
+    throw new Error(`GitHub ${res.status} on ${path}`);
+  return res.json();
+}
+function encodePath(path) {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+function decodeB64(b64) {
+  const bytes = Uint8Array.from(atob(b64.replace(/\n/g, "")), (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+function encodeB64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = "";
+  for (let i = 0;i < bytes.length; i += 32768) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + 32768));
+  }
+  return btoa(bin);
+}
+var SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|py|go|rs|swift|kt|java|rb|c|h|cpp|cs|css|scss|md|json|yml|yaml|html|vue|svelte)$/i;
+var IGNORE_RE = /(^|\/)(node_modules|dist|build|vendor|\.git)\/|(^|\/)package-lock\.json$|\.min\./;
+async function fetchRepoFiles(token, repo, issueTitle, maxFiles = 6) {
+  const info = await gh(token, `/repos/${repo}`);
+  const baseBranch = info.default_branch ?? "main";
+  const tree = await gh(token, `/repos/${repo}/git/trees/${encodeURIComponent(baseBranch)}?recursive=1`);
+  const blobs = (tree.tree ?? []).filter((t) => t.type === "blob" && SOURCE_RE.test(t.path) && !IGNORE_RE.test(t.path) && (t.size ?? 0) < 60000);
+  const words = issueTitle.toLowerCase().split(/\W+/).filter((w) => w.length > 2);
+  const score = (p) => {
+    const lower = p.toLowerCase();
+    let n = words.reduce((acc, w) => acc + (lower.includes(w) ? 2 : 0), 0);
+    if (/readme/i.test(p))
+      n += 1;
+    return n - p.split("/").length * 0.1;
+  };
+  const picked = blobs.sort((a, b) => score(b.path) - score(a.path)).slice(0, maxFiles);
+  const codebase = {};
+  let total = 0;
+  for (const blob of picked) {
+    const data = await gh(token, `/repos/${repo}/contents/${encodePath(blob.path)}?ref=${encodeURIComponent(baseBranch)}`);
+    const text = decodeB64(data.content ?? "");
+    total += text.length;
+    if (total > 120000)
+      break;
+    codebase[blob.path] = text;
+  }
+  if (Object.keys(codebase).length === 0)
+    throw new Error("No readable source files found in repo");
+  return { baseBranch, codebase };
+}
+async function applyToGitHub(token, repo, baseBranch, branch, changes, message) {
+  const ref = await gh(token, `/repos/${repo}/git/ref/${encodeURIComponent(`heads/${baseBranch}`)}`);
+  await gh(token, `/repos/${repo}/git/refs`, {
+    method: "POST",
+    body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: ref.object.sha })
+  });
+  for (const change of changes) {
+    let sha;
+    try {
+      const cur = await gh(token, `/repos/${repo}/contents/${encodePath(change.path)}?ref=${encodeURIComponent(branch)}`);
+      sha = cur.sha;
+    } catch {}
+    await gh(token, `/repos/${repo}/contents/${encodePath(change.path)}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `${message} (${change.path})`,
+        content: encodeB64(change.after),
+        branch,
+        ...sha ? { sha } : {}
+      })
+    });
+  }
+  try {
+    const pr2 = await gh(token, `/repos/${repo}/pulls`, {
+      method: "POST",
+      body: JSON.stringify({
+        title: message,
+        head: branch,
+        base: baseBranch,
+        body: "Automated change proposed by the Linage agent. Review the diff before merging."
+      })
+    });
+    return pr2.html_url;
+  } catch {
+    return `https://github.com/${repo}/compare/${baseBranch}...${branch}?expand=1`;
+  }
+}
+
 // src/agent/engine.ts
 var STEP_DELAY_MS = 1300;
 function resolveEdits(codebase, edits, taskId) {
@@ -24010,8 +24272,31 @@ function useAgentEngine(state, dispatch) {
     queued.forEach((task) => {
       running.current.add(task.id);
       dispatch({ type: "agentStatus", id: task.id, status: "working" });
-      const codebase = { ...state.codebase };
       (async () => {
+        let codebase = { ...state.codebase };
+        let baseBranch;
+        if (task.target === "github" && task.repo) {
+          dispatch({ type: "agentStep", id: task.id, step: `Connecting to ${task.repo}…` });
+          try {
+            const fetched = await fetchRepoFiles(state.settings.githubToken, task.repo, task.title);
+            codebase = fetched.codebase;
+            baseBranch = fetched.baseBranch;
+            dispatch({
+              type: "agentStep",
+              id: task.id,
+              step: `Fetched ${Object.keys(codebase).length} files from ${task.repo}@${baseBranch}`
+            });
+          } catch (e) {
+            dispatch({
+              type: "agentStatus",
+              id: task.id,
+              status: "failed",
+              summary: `Could not read ${task.repo}: ${e instanceof Error ? e.message : String(e)}`
+            });
+            running.current.delete(task.id);
+            return;
+          }
+        }
         const input = {
           issueId: task.issueId,
           title: task.title,
@@ -24034,7 +24319,8 @@ function useAgentEngine(state, dispatch) {
           type: "agentResult",
           id: task.id,
           summary: result.summary,
-          changes: resolveEdits(codebase, result.edits, task.id)
+          changes: resolveEdits(codebase, result.edits, task.id),
+          baseBranch
         });
         running.current.delete(task.id);
       })();
@@ -24202,8 +24488,27 @@ function defaultState() {
     theme: "dark",
     locale: "en",
     agentTasks: [],
-    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL },
+    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL, githubToken: "", githubRepo: "" },
     codebase: { ...initialCodebase }
+  };
+}
+function sanitizeState(parsed) {
+  if (!parsed || !Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
+    return defaultState();
+  }
+  return {
+    issues: parsed.issues,
+    notifications: parsed.notifications,
+    theme: parsed.theme === "light" ? "light" : "dark",
+    locale: parsed.locale === "zh" ? "zh" : "en",
+    agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
+    settings: {
+      apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
+      model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL,
+      githubToken: typeof parsed.settings?.githubToken === "string" ? parsed.settings.githubToken : "",
+      githubRepo: typeof parsed.settings?.githubRepo === "string" ? parsed.settings.githubRepo : ""
+    },
+    codebase: parsed.codebase && typeof parsed.codebase === "object" ? { ...initialCodebase, ...parsed.codebase } : { ...initialCodebase }
   };
 }
 function loadState() {
@@ -24211,25 +24516,13 @@ function loadState() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw)
       return defaultState();
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
-      return defaultState();
-    }
-    return {
-      issues: parsed.issues,
-      notifications: parsed.notifications,
-      theme: parsed.theme === "light" ? "light" : "dark",
-      locale: parsed.locale === "zh" ? "zh" : "en",
-      agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
-      settings: {
-        apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
-        model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL
-      },
-      codebase: parsed.codebase && typeof parsed.codebase === "object" ? { ...initialCodebase, ...parsed.codebase } : { ...initialCodebase }
-    };
+    return sanitizeState(JSON.parse(raw));
   } catch {
     return defaultState();
   }
+}
+function serializeState(state) {
+  return JSON.stringify(state, null, 2);
 }
 function saveState(state) {
   try {
@@ -24300,8 +24593,14 @@ function reducer(state, action) {
           status: "needsReview",
           summary: action.summary,
           changes: action.changes,
+          baseBranch: action.baseBranch ?? t.baseBranch,
           finishedAt: Date.now()
         } : t)
+      };
+    case "githubApplied":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, status: "done", prUrl: action.prUrl, branch: action.branch } : t)
       };
     case "applyChanges": {
       const task = state.agentTasks.find((t) => t.id === action.id);
@@ -24319,6 +24618,8 @@ function reducer(state, action) {
     }
     case "setSettings":
       return { ...state, settings: { ...state.settings, ...action.settings } };
+    case "importState":
+      return sanitizeState(action.data);
     case "reset":
       return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings };
     default:
@@ -24400,6 +24701,7 @@ function App() {
     navigate({ type: "issue", id });
   };
   useAgentEngine(state, dispatch);
+  const githubMode = !!(state.settings.githubToken && state.settings.githubRepo);
   const delegateIssue = (issue) => {
     dispatch({
       type: "delegate",
@@ -24410,9 +24712,25 @@ function App() {
         status: "queued",
         model: state.settings.model,
         steps: [],
+        target: githubMode ? "github" : "virtual",
+        repo: githubMode ? state.settings.githubRepo : undefined,
         createdAt: Date.now()
       }
     });
+  };
+  const approveTask = (task) => {
+    if (task.target !== "github") {
+      dispatch({ type: "applyChanges", id: task.id });
+      return;
+    }
+    const branch = `linage/${task.id}`;
+    dispatch({ type: "agentStatus", id: task.id, status: "applying" });
+    applyToGitHub(state.settings.githubToken, task.repo, task.baseBranch ?? "main", branch, task.changes ?? [], `Linage: ${task.title} (${task.issueId})`).then((prUrl) => dispatch({ type: "githubApplied", id: task.id, prUrl, branch })).catch((e) => dispatch({
+      type: "agentStatus",
+      id: task.id,
+      status: "failed",
+      summary: `Push failed: ${e instanceof Error ? e.message : String(e)}`
+    }));
   };
   const toggleTheme = () => dispatch({ type: "setTheme", theme: state.theme === "dark" ? "light" : "dark" });
   const toggleLocale = () => dispatch({ type: "setLocale", locale: state.locale === "en" ? "zh" : "en" });
@@ -24464,7 +24782,11 @@ function App() {
               tasks: state.agentTasks,
               onOpenIssue: openIssue,
               onOpenTask: (id) => navigate({ type: "task", id }),
-              onApprove: (id) => dispatch({ type: "applyChanges", id }),
+              onApprove: (id) => {
+                const task = state.agentTasks.find((a) => a.id === id);
+                if (task)
+                  approveTask(task);
+              },
               onOpenSettings: () => setSettingsOpen(true)
             }, undefined, false, undefined, this),
             view.type === "task" && (() => {
@@ -24477,7 +24799,7 @@ function App() {
               return /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(TaskDiffView, {
                 task,
                 onBack: () => navigate({ type: "agents" }),
-                onApprove: () => dispatch({ type: "applyChanges", id: task.id }),
+                onApprove: () => approveTask(task),
                 onOpenIssue: openIssue
               }, undefined, false, undefined, this);
             })()
@@ -24523,7 +24845,24 @@ function App() {
         settingsOpen && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(SettingsModal, {
           settings: state.settings,
           onSave: (s) => dispatch({ type: "setSettings", settings: s }),
-          onClose: () => setSettingsOpen(false)
+          onClose: () => setSettingsOpen(false),
+          onExport: () => {
+            const blob = new Blob([serializeState(state)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `linage-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+          },
+          onImport: (file) => {
+            file.text().then((text) => {
+              try {
+                dispatch({ type: "importState", data: JSON.parse(text) });
+                setSettingsOpen(false);
+              } catch {}
+            });
+          }
         }, undefined, false, undefined, this)
       ]
     }, undefined, true, undefined, this)
@@ -24535,4 +24874,9 @@ var jsx_dev_runtime20 = __toESM(require_jsx_dev_runtime(), 1);
 import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime20.jsxDEV(import_react16.StrictMode, {
   children: /* @__PURE__ */ jsx_dev_runtime20.jsxDEV(App, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));
+if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !import.meta.env?.DEV) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
 </script></body></html>
