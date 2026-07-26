@@ -45,6 +45,12 @@ export const Compose = ({ size = 15 }: P) => (
   </S>
 )
 
+export const StopSquare = ({ size = 10 }: P) => (
+  <S size={size}>
+    <rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" />
+  </S>
+)
+
 export const ChatBubble = ({ size = 15 }: P) => (
   <S size={size}>
     <path

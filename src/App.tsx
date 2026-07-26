@@ -29,6 +29,8 @@ export default function App() {
   const [modalStatus, setModalStatus] = useState<StatusKey>('todo')
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
   const [chatBusy, setChatBusy] = useState<string[]>([])
+  const [chatStream, setChatStream] = useState<{ threadId: string; text: string } | null>(null)
+  const chatAborts = useRef<Record<string, AbortController>>({})
   const installPrompt = useRef<any>(null)
 
   useEffect(() => {
@@ -181,9 +183,16 @@ export default function App() {
     const provider = state.settings.provider
     const model =
       (threadId ? state.chats.find((c) => c.id === threadId)?.model : undefined) || provider.model
+    const ctrl = new AbortController()
+    chatAborts.current[id] = ctrl
     setChatBusy((b) => [...b, id!])
-    chatReply({ ...provider, model }, turns, state.locale)
-      .then((reply) =>
+    chatReply({ ...provider, model }, turns, state.locale, {
+      signal: ctrl.signal,
+      onDelta: (text) => setChatStream({ threadId: id!, text }),
+    })
+      .then((reply) => {
+        // Aborted before anything arrived → nothing to commit.
+        if (!reply.trim()) return
         dispatch({
           type: 'chatMessage',
           threadId: id!,
@@ -194,8 +203,8 @@ export default function App() {
             time: Date.now(),
             model: provider.kind === 'simulated' ? 'simulated' : model,
           },
-        }),
-      )
+        })
+      })
       .catch((e) =>
         dispatch({
           type: 'chatMessage',
@@ -209,8 +218,14 @@ export default function App() {
           },
         }),
       )
-      .finally(() => setChatBusy((b) => b.filter((x) => x !== id)))
+      .finally(() => {
+        delete chatAborts.current[id!]
+        setChatBusy((b) => b.filter((x) => x !== id))
+        setChatStream((s) => (s?.threadId === id ? null : s))
+      })
   }
+
+  const stopChat = (threadId: string) => chatAborts.current[threadId]?.abort()
 
   const toggleTheme = () =>
     dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
@@ -330,9 +345,11 @@ export default function App() {
             activeId={view.id}
             busy={chatBusy}
             provider={state.settings.provider}
+            stream={chatStream}
             onOpen={(id) => navigate({ type: 'chat', id })}
             onNew={() => navigate({ type: 'chat' })}
             onSend={sendChat}
+            onStop={stopChat}
             onDelete={(id) => {
               dispatch({ type: 'deleteChat', id })
               if (view.id === id) navigate({ type: 'chat' })

@@ -7,7 +7,7 @@ import type { ChatThread, ProviderSettings } from '../store'
 import { MODEL_PRESETS } from '../agent/provider'
 import { Avatar, BotAvatar } from './Avatar'
 import { Dropdown } from './Dropdown'
-import { ArrowUp, ChatBubble, ChevronDown, Compose } from './Icons'
+import { ArrowUp, ChatBubble, ChevronDown, Compose, StopSquare } from './Icons'
 import { useI18n, type MessageKey } from '../i18n'
 
 const SUGGESTS: MessageKey[] = ['chat.suggest1', 'chat.suggest2', 'chat.suggest3']
@@ -16,10 +16,12 @@ export default function ChatView({
   chats,
   activeId,
   busy,
+  stream,
   provider,
   onOpen,
   onNew,
   onSend,
+  onStop,
   onDelete,
   onSetModel,
   onOpenSettings,
@@ -27,10 +29,12 @@ export default function ChatView({
   chats: ChatThread[]
   activeId?: string
   busy: string[]
+  stream: { threadId: string; text: string } | null
   provider: ProviderSettings
   onOpen: (id: string) => void
   onNew: () => void
   onSend: (threadId: string | null, text: string) => void
+  onStop: (threadId: string) => void
   onDelete: (id: string) => void
   onSetModel: (threadId: string, model: string) => void
   onOpenSettings: () => void
@@ -43,13 +47,14 @@ export default function ChatView({
   const sorted = [...chats].sort((a, b) => b.updatedAt - a.updatedAt)
   const thread = activeId ? chats.find((c) => c.id === activeId) : undefined
   const isBusy = !!thread && busy.includes(thread.id)
+  const liveText = isBusy && stream?.threadId === thread?.id ? stream!.text : ''
   const activeModel = thread?.model || provider.model
 
   useEffect(() => inputRef.current?.focus(), [activeId])
 
   useEffect(() => {
     msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight })
-  }, [thread?.messages.length, isBusy])
+  }, [thread?.messages.length, isBusy, liveText.length])
 
   const submit = () => {
     const text = draft.trim()
@@ -178,9 +183,21 @@ export default function ChatView({
                     <BotAvatar size="sm" />
                   </span>
                   <div className="chat-msg-content">
-                    <div className="chat-msg-body thinking">
-                      <span className="spinner" /> {t('chat.thinking')}
-                    </div>
+                    {liveText ? (
+                      <>
+                        <div className="chat-msg-meta">
+                          <span className="chat-msg-name">Linage</span>
+                        </div>
+                        <div className="chat-msg-body streaming">
+                          {liveText}
+                          <span className="stream-cursor" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="chat-msg-body thinking">
+                        <span className="spinner" /> {t('chat.thinking')}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -204,14 +221,24 @@ export default function ChatView({
                 disabled={isBusy}
               />
               <span className="composer-actions">
-                <button
-                  className="send-btn"
-                  onClick={submit}
-                  disabled={isBusy || !draft.trim()}
-                  style={{ opacity: isBusy || !draft.trim() ? 0.5 : 1 }}
-                >
-                  <ArrowUp size={12} />
-                </button>
+                {isBusy ? (
+                  <button
+                    className="send-btn stop"
+                    title={t('chat.stop')}
+                    onClick={() => onStop(thread!.id)}
+                  >
+                    <StopSquare size={10} />
+                  </button>
+                ) : (
+                  <button
+                    className="send-btn"
+                    onClick={submit}
+                    disabled={!draft.trim()}
+                    style={{ opacity: draft.trim() ? 1 : 0.5 }}
+                  >
+                    <ArrowUp size={12} />
+                  </button>
+                )}
               </span>
             </div>
           </div>

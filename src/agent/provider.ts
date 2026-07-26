@@ -318,59 +318,139 @@ function simulatedReply(turns: ChatTurn[], locale: 'en' | 'zh'): string {
   )
 }
 
-/** One chat completion over the configured provider. Non-streaming (v1). */
+// SSE reader: feeds every `data: {...}` payload to onJson, stops on [DONE].
+// Non-data lines (event:, comments, keep-alives) are ignored.
+async function readSse(res: Response, onJson: (j: any) => void): Promise<void> {
+  const reader = res.body!.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    const lines = buf.split('\n')
+    buf = lines.pop() ?? ''
+    for (const raw of lines) {
+      const line = raw.trim()
+      if (!line.startsWith('data:')) continue
+      const payload = line.slice(5).trim()
+      if (payload === '[DONE]') return
+      try {
+        onJson(JSON.parse(payload))
+      } catch {
+        // malformed keep-alive fragment — skip
+      }
+    }
+  }
+}
+
+const wait = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const abort = () => reject(new DOMException('Aborted', 'AbortError'))
+    if (signal?.aborted) return abort()
+    const t = setTimeout(() => resolve(), ms)
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(t)
+        abort()
+      },
+      { once: true },
+    )
+  })
+
+export interface ChatOpts {
+  /** Called with the FULL accumulated text after every delta. */
+  onDelta?: (text: string) => void
+  /** Abort to stop generation; whatever already arrived is returned. */
+  signal?: AbortSignal
+}
+
+/** One chat completion over the configured provider — streaming when the
+ *  endpoint supports SSE, with a plain-JSON fallback for relays that
+ *  ignore `stream: true`. Aborting resolves with the partial text. */
 export async function chatReply(
   provider: ProviderSettings,
   turns: ChatTurn[],
   locale: 'en' | 'zh' = 'zh',
+  opts: ChatOpts = {},
 ): Promise<string> {
-  if (provider.kind === 'anthropic' && provider.apiKey) {
-    const base = stripSlash(provider.baseUrl || DEFAULT_ANTHROPIC_BASE)
-    const res = await fetch(`${base}/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': provider.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: provider.model,
-        max_tokens: 2048,
-        system: CHAT_SYSTEM,
-        messages: turns.map((t) => ({ role: t.role, content: t.text })),
-      }),
-    })
-    if (!res.ok) throw new Error(`Anthropic API ${res.status}`)
-    const data = await res.json()
-    const text = (data.content ?? []).map((b: { text?: string }) => b?.text ?? '').join('')
-    if (!text) throw new Error('empty response')
-    return text
+  let acc = ''
+  const emit = (piece: string) => {
+    if (!piece) return
+    acc += piece
+    opts.onDelta?.(acc)
   }
-  if (provider.kind === 'openai' && provider.apiKey) {
-    const base = stripSlash(provider.baseUrl || DEFAULT_OPENAI_BASE)
-    const res = await fetch(`${base}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${provider.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: provider.model,
-        max_tokens: 2048,
-        messages: [
-          { role: 'system', content: CHAT_SYSTEM },
-          ...turns.map((t) => ({ role: t.role, content: t.text })),
-        ],
-      }),
-    })
-    if (!res.ok) throw new Error(`OpenAI-compatible API ${res.status}`)
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content ?? ''
-    if (!text) throw new Error('empty response')
-    return text
+  try {
+    if (provider.kind === 'anthropic' && provider.apiKey) {
+      const base = stripSlash(provider.baseUrl || DEFAULT_ANTHROPIC_BASE)
+      const res = await fetch(`${base}/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': provider.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          max_tokens: 2048,
+          stream: true,
+          system: CHAT_SYSTEM,
+          messages: turns.map((t) => ({ role: t.role, content: t.text })),
+        }),
+        signal: opts.signal,
+      })
+      if (!res.ok) throw new Error(`Anthropic API ${res.status}`)
+      if ((res.headers.get('content-type') ?? '').includes('event-stream')) {
+        await readSse(res, (j) => {
+          if (j.type === 'content_block_delta') emit(j.delta?.text ?? '')
+        })
+      } else {
+        const data = await res.json()
+        emit((data.content ?? []).map((b: { text?: string }) => b?.text ?? '').join(''))
+      }
+    } else if (provider.kind === 'openai' && provider.apiKey) {
+      const base = stripSlash(provider.baseUrl || DEFAULT_OPENAI_BASE)
+      const res = await fetch(`${base}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${provider.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          max_tokens: 2048,
+          stream: true,
+          messages: [
+            { role: 'system', content: CHAT_SYSTEM },
+            ...turns.map((t) => ({ role: t.role, content: t.text })),
+          ],
+        }),
+        signal: opts.signal,
+      })
+      if (!res.ok) throw new Error(`OpenAI-compatible API ${res.status}`)
+      if ((res.headers.get('content-type') ?? '').includes('event-stream')) {
+        await readSse(res, (j) => emit(j.choices?.[0]?.delta?.content ?? ''))
+      } else {
+        const data = await res.json()
+        emit(data.choices?.[0]?.message?.content ?? '')
+      }
+    } else {
+      // Simulated: stream the canned reply in small pieces so the
+      // conversation UI behaves exactly like a real streaming model.
+      const text = simulatedReply(turns, locale)
+      await wait(400, opts.signal)
+      for (let i = 0; i < text.length; i += 5) {
+        await wait(28, opts.signal)
+        emit(text.slice(i, i + 5))
+      }
+    }
+  } catch (e) {
+    // User pressed stop — keep whatever arrived. Anything else is real.
+    if ((e as Error)?.name === 'AbortError') return acc
+    throw e
   }
-  // Simulated: a small delay so the exchange feels like an exchange.
-  await new Promise((r) => setTimeout(r, 500 + Math.random() * 400))
-  return simulatedReply(turns, locale)
+  if (!acc) throw new Error('empty response')
+  return acc
 }

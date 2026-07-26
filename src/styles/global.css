@@ -2827,3 +2827,30 @@ body,
 .composer.slim.chat-composer {
   margin-top: 0;
 }
+
+/* streaming */
+.send-btn.stop {
+  background: var(--bg-active);
+  color: var(--text-1);
+}
+
+.send-btn.stop:hover {
+  color: var(--red);
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--text-2);
+  border-radius: 1px;
+  animation: cursor-blink 0.8s steps(1) infinite;
+}
+
+@keyframes cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
