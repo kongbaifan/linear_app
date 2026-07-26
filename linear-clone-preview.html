@@ -2255,6 +2255,78 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
   color: var(--accent-text);
   border-color: #5e6ad266;
 }
+
+.settings-page {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 16px;
+  max-width: 760px;
+  padding: 24px 32px 60px;
+}
+
+.settings-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-raised);
+  padding: 18px 20px 20px;
+}
+
+.settings-section-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings-section-desc {
+  color: var(--text-3);
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.settings-section-desc a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.settings-row {
+  display: flex;
+  align-items:  center;
+  gap: 8px;
+}
+
+.settings-row .settings-input {
+  flex: 1;
+}
+
+.test-result {
+  display: inline-flex;
+  color: var(--text-2);
+  align-items:  center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.test-result.ok {
+  color: var(--green);
+}
+
+.test-result.fail {
+  color: var(--red);
+}
+
+.btn.danger {
+  color: var(--red);
+  border-color: #eb575766;
+}
+
+.btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
 </style></head><body><div id="root"></div><script type="module">var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
@@ -19493,7 +19565,21 @@ var en = {
   "github.hint": "When both are set, delegated tasks read this real repository, and approving pushes a branch + opens a pull request. The token stays in your browser.",
   "agents.status.applying": "Applying",
   "task.applying": "Pushing to GitHub…",
-  "task.viewPr": "View pull request"
+  "task.viewPr": "View pull request",
+  "settings.title": "Settings",
+  "settings.aiSection": "AI provider",
+  "settings.aiDesc": "The agent uses Claude via your own Anthropic API key. Without a key it runs in deterministic simulation mode.",
+  "settings.appearance": "Appearance",
+  "settings.theme": "Theme",
+  "settings.dark": "Dark",
+  "settings.light": "Light",
+  "settings.test": "Test connection",
+  "settings.testing": "Testing…",
+  "settings.testOk": "Connected",
+  "settings.testFail": "Connection failed",
+  "settings.about": "About",
+  "settings.aboutDesc": "a Linear-quality personal AI coding workbench.",
+  "palette.goSettings": "Open Settings"
 };
 var zh = {
   "nav.inbox": "收件箱",
@@ -19608,7 +19694,21 @@ var zh = {
   "github.hint": "两项都填写后,委派的任务会读取这个真实仓库,批准即推送分支并创建 Pull Request。token 仅保存在你的浏览器。",
   "agents.status.applying": "应用中",
   "task.applying": "正在推送到 GitHub…",
-  "task.viewPr": "查看 Pull Request"
+  "task.viewPr": "查看 Pull Request",
+  "settings.title": "设置",
+  "settings.aiSection": "AI 提供方",
+  "settings.aiDesc": "Agent 通过你自己的 Anthropic API key 调用 Claude。未填写时使用内置的确定性模拟引擎。",
+  "settings.appearance": "外观",
+  "settings.theme": "主题",
+  "settings.dark": "深色",
+  "settings.light": "亮色",
+  "settings.test": "测试连接",
+  "settings.testing": "测试中…",
+  "settings.testOk": "连接成功",
+  "settings.testFail": "连接失败",
+  "settings.about": "关于",
+  "settings.aboutDesc": "Linear 品质的个人 AI 编程工作台。",
+  "palette.goSettings": "打开设置"
 };
 var dictionaries = { en, zh };
 function translate(locale, key) {
@@ -20320,6 +20420,24 @@ var Moon = ({ size = 14 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
     strokeLinejoin: "round"
   }, undefined, false, undefined, this)
 }, undefined, false, undefined, this);
+var Gear = ({ size = 14 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
+  size,
+  children: [
+    /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("circle", {
+      cx: "8",
+      cy: "8",
+      r: "2.2",
+      stroke: "currentColor",
+      strokeWidth: "1.3"
+    }, undefined, false, undefined, this),
+    /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+      d: "M8 1.8l.9 1.8 2-.3 1 1.7 1.7 1-.3 2 1.5 1.3-1.5 1.3.3 2-1.7 1-1 1.7-2-.3-.9 1.8-.9-1.8-2 .3-1-1.7-1.7-1 .3-2L1.2 8l1.5-1.3-.3-2 1.7-1 1-1.7 2 .3L8 1.8Z",
+      stroke: "currentColor",
+      strokeWidth: "1.1",
+      strokeLinejoin: "round"
+    }, undefined, false, undefined, this)
+  ]
+}, undefined, true, undefined, this);
 
 // src/components/Sidebar.tsx
 var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
@@ -20362,6 +20480,14 @@ function Sidebar({
           /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
             className: "sidebar-top-actions",
             children: [
+              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+                className: "icon-btn",
+                title: t("settings.title"),
+                onClick: () => onNavigate({ type: "settings" }),
+                children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Gear, {
+                  size: 14
+                }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
                 className: "icon-btn lang-btn",
                 title: t("action.language"),
@@ -22965,6 +23091,15 @@ function CommandPalette({
         run: onToggleLocale
       },
       {
+        key: "settings",
+        section: t("palette.navigation"),
+        label: t("palette.goSettings"),
+        icon: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Search, {
+          size: 14
+        }, undefined, false, undefined, this),
+        run: () => onNavigate({ type: "settings" })
+      },
+      {
         key: "reset",
         section: t("palette.actions"),
         label: t("palette.reset"),
@@ -23808,160 +23943,629 @@ function TaskDiffView({
   }, undefined, true, undefined, this);
 }
 
-// src/components/SettingsModal.tsx
+// src/components/SettingsView.tsx
+var import_react12 = __toESM(require_react(), 1);
+
+// src/store.ts
 var import_react11 = __toESM(require_react(), 1);
+
+// src/data/codebase.ts
+var initialCodebase = {
+  "client/src/views/RideHistory/useRideHistory.ts": `import { useComputed } from '@ride/reactive'
+import { ridesAwaitingPickup, ridesInProgress, completedRides } from './rideStore'
+
+export interface RideSection {
+  title: string
+  rideIds: string[]
+}
+
+// Build sections from ride history state
+export function useRideHistory() {
+  const waitingStatusById: Map<string, string> = useComputed(() => {
+    const map = new Map<string, string>()
+    for (const ride of ridesAwaitingPickup) {
+      map.set(ride.id, 'Driver en route')
+    }
+    for (const ride of ridesInProgress) {
+      map.set(ride.id, 'Trip in progress')
+    }
+    return map
+  })
+
+  const sections: RideSection[] = useComputed(() => [
+    { title: 'Active', rideIds: [...waitingStatusById.keys()] },
+    { title: 'Past', rideIds: completedRides.map((r) => r.id) },
+  ])
+
+  return { sections, waitingStatusById }
+}
+`,
+  "client/src/views/RideHistory/RideHistoryPage.tsx": `import styled from 'styled-components'
+import { useRideHistory } from './useRideHistory'
+import { RideCard } from './RideCard'
+
+const Card = styled.div\`
+  border-radius: 10px;
+  padding: 14px 16px;
+  background-color: \${(props) => props.theme.color.bgBase};
+  box-shadow: none;
+  opacity: 1;
+\`
+
+export function RideHistoryPage() {
+  const { sections, waitingStatusById } = useRideHistory()
+
+  return (
+    <main>
+      {sections.map((section) => (
+        <section key={section.title}>
+          <h2>{section.title}</h2>
+          {section.rideIds.map((id) => (
+            <Card key={id}>
+              <RideCard rideId={id} byline={waitingStatusById.get(id)} />
+            </Card>
+          ))}
+        </section>
+      ))}
+    </main>
+  )
+}
+`,
+  "client/src/startup/AppBoot.swift": `import UIKit
+
+final class AppBoot {
+    static let shared = AppBoot()
+
+    func launch(window: UIWindow) {
+        let store = RideStore.shared
+
+        // Block until the full vehicle_state payload has been refreshed.
+        store.refreshVehicleState(mode: .full)
+        store.waitUntilSynced()
+
+        window.rootViewController = HomeViewController(store: store)
+        window.makeKeyAndVisible()
+    }
+
+    func warmCaches() {
+        MapTileCache.shared.preload(region: .lastKnown)
+        ReceiptCache.shared.trim(olderThanDays: 30)
+    }
+}
+`
+};
+
+// src/store.ts
+var DEFAULT_AGENT_MODEL = "claude-sonnet-4-5";
+var STORAGE_KEY = "linear-clone-state-v1";
+function defaultState() {
+  return {
+    issues,
+    notifications,
+    theme: "dark",
+    locale: "en",
+    agentTasks: [],
+    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL, githubToken: "", githubRepo: "" },
+    codebase: { ...initialCodebase }
+  };
+}
+function sanitizeState(parsed) {
+  if (!parsed || !Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
+    return defaultState();
+  }
+  return {
+    issues: parsed.issues,
+    notifications: parsed.notifications,
+    theme: parsed.theme === "light" ? "light" : "dark",
+    locale: parsed.locale === "zh" ? "zh" : "en",
+    agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
+    settings: {
+      apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
+      model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL,
+      githubToken: typeof parsed.settings?.githubToken === "string" ? parsed.settings.githubToken : "",
+      githubRepo: typeof parsed.settings?.githubRepo === "string" ? parsed.settings.githubRepo : ""
+    },
+    codebase: parsed.codebase && typeof parsed.codebase === "object" ? { ...initialCodebase, ...parsed.codebase } : { ...initialCodebase }
+  };
+}
+function loadState() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw)
+      return defaultState();
+    return sanitizeState(JSON.parse(raw));
+  } catch {
+    return defaultState();
+  }
+}
+function serializeState(state) {
+  return JSON.stringify(state, null, 2);
+}
+function saveState(state) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {}
+}
+function reducer(state, action) {
+  switch (action.type) {
+    case "updateIssue":
+      return {
+        ...state,
+        issues: state.issues.map((i) => i.id === action.id ? { ...i, ...action.patch } : i)
+      };
+    case "addIssue":
+      return { ...state, issues: [action.issue, ...state.issues] };
+    case "moveIssue": {
+      const { dragId, status, beforeId } = action;
+      const dragged = state.issues.find((i) => i.id === dragId);
+      if (!dragged || dragId === beforeId)
+        return state;
+      const rest = state.issues.filter((i) => i.id !== dragId);
+      const updated = { ...dragged, status };
+      let issues2;
+      if (beforeId) {
+        const idx = rest.findIndex((i) => i.id === beforeId);
+        issues2 = idx >= 0 ? [...rest.slice(0, idx), updated, ...rest.slice(idx)] : [...rest, updated];
+      } else {
+        issues2 = [...rest, updated];
+      }
+      return { ...state, issues: issues2 };
+    }
+    case "readNotification":
+      return {
+        ...state,
+        notifications: state.notifications.map((n) => n.id === action.id ? { ...n, unread: false } : n)
+      };
+    case "readAllNotifications":
+      return {
+        ...state,
+        notifications: state.notifications.map((n) => ({ ...n, unread: false }))
+      };
+    case "setTheme":
+      return { ...state, theme: action.theme };
+    case "setLocale":
+      return { ...state, locale: action.locale };
+    case "delegate":
+      return { ...state, agentTasks: [action.task, ...state.agentTasks] };
+    case "agentStep":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, steps: [...t.steps, action.step] } : t)
+      };
+    case "agentStatus":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? {
+          ...t,
+          status: action.status,
+          summary: action.summary ?? t.summary,
+          finishedAt: action.status === "needsReview" || action.status === "done" || action.status === "failed" ? Date.now() : t.finishedAt
+        } : t)
+      };
+    case "agentResult":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? {
+          ...t,
+          status: "needsReview",
+          summary: action.summary,
+          changes: action.changes,
+          baseBranch: action.baseBranch ?? t.baseBranch,
+          finishedAt: Date.now()
+        } : t)
+      };
+    case "githubApplied":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, status: "done", prUrl: action.prUrl, branch: action.branch } : t)
+      };
+    case "applyChanges": {
+      const task = state.agentTasks.find((t) => t.id === action.id);
+      if (!task || task.status !== "needsReview")
+        return state;
+      const codebase = { ...state.codebase };
+      for (const change of task.changes ?? []) {
+        codebase[change.path] = change.after;
+      }
+      return {
+        ...state,
+        codebase,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, status: "done" } : t)
+      };
+    }
+    case "setSettings":
+      return { ...state, settings: { ...state.settings, ...action.settings } };
+    case "importState":
+      return sanitizeState(action.data);
+    case "reset":
+      return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings };
+    default:
+      return state;
+  }
+}
+function nextIssueId(issues2) {
+  const maxNum = Math.max(...issues2.map((i) => parseInt(i.id.split("-")[1], 10)));
+  return `ENG-${maxNum + 1}`;
+}
+function useAppStore() {
+  const [state, dispatch] = import_react11.useReducer(reducer, undefined, loadState);
+  import_react11.useEffect(() => saveState(state), [state]);
+  import_react11.useEffect(() => {
+    document.documentElement.dataset.theme = state.theme;
+  }, [state.theme]);
+  return { state, dispatch };
+}
+
+// src/components/SettingsView.tsx
 var jsx_dev_runtime18 = __toESM(require_jsx_dev_runtime(), 1);
 var MODEL_OPTIONS = ["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"];
-function SettingsModal({
-  settings,
-  onSave,
-  onClose,
-  onExport,
-  onImport
-}) {
-  const fileRef = import_react11.useRef(null);
+function TestBadge({ state }) {
   const { t } = useI18n();
-  const [apiKey, setApiKey] = import_react11.useState(settings.apiKey);
-  const [model, setModel] = import_react11.useState(settings.model);
-  const [githubToken, setGithubToken] = import_react11.useState(settings.githubToken);
-  const [githubRepo, setGithubRepo] = import_react11.useState(settings.githubRepo);
-  import_react11.useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-  return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-    className: "overlay",
-    onMouseDown: (e) => e.target === e.currentTarget && onClose(),
-    children: /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-      className: "modal",
-      style: { width: 480 },
+  if (state.status === "idle")
+    return null;
+  if (state.status === "testing")
+    return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("span", {
+      className: "test-result",
       children: [
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-          className: "modal-breadcrumb",
-          children: t("agents.settings")
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("span", {
+          className: "spinner"
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
-          className: "settings-label",
-          children: t("agents.apiKey")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
-          className: "settings-input",
-          type: "password",
-          placeholder: "sk-ant-…",
-          value: apiKey,
-          onChange: (e) => setApiKey(e.target.value)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-          className: "settings-hint",
-          children: t("agents.apiKeyHint")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
-          className: "settings-label",
-          children: t("agents.model")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
-          className: "settings-input",
-          list: "model-options",
-          value: model,
-          onChange: (e) => setModel(e.target.value)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("datalist", {
-          id: "model-options",
-          children: MODEL_OPTIONS.map((m) => /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("option", {
-            value: m
-          }, m, false, undefined, this))
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
-          className: "settings-label",
-          children: t("github.token")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
-          className: "settings-input",
-          type: "password",
-          placeholder: "ghp_… / github_pat_…",
-          value: githubToken,
-          onChange: (e) => setGithubToken(e.target.value)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
-          className: "settings-label",
-          children: t("github.repo")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
-          className: "settings-input",
-          placeholder: "owner/repository",
-          value: githubRepo,
-          onChange: (e) => setGithubRepo(e.target.value)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-          className: "settings-hint",
-          children: t("github.hint")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
-          className: "settings-label",
-          children: t("data.title")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-          style: { display: "flex", gap: 8 },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
-              className: "btn sm",
-              onClick: onExport,
-              children: t("data.export")
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
-              className: "btn sm",
-              onClick: () => fileRef.current?.click(),
-              children: t("data.import")
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
-              ref: fileRef,
-              type: "file",
-              accept: "application/json",
-              style: { display: "none" },
-              onChange: (e) => {
-                const f = e.target.files?.[0];
-                if (f)
-                  onImport(f);
-                e.target.value = "";
-              }
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-          className: "settings-hint",
-          children: t("data.hint")
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-          className: "modal-footer",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
-              className: "btn",
-              onClick: onClose,
-              children: t("modal.cancel")
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
-              className: "btn primary",
-              onClick: () => {
-                onSave({
-                  apiKey: apiKey.trim(),
-                  model: model.trim() || settings.model,
-                  githubToken: githubToken.trim(),
-                  githubRepo: githubRepo.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "")
-                });
-                onClose();
-              },
-              children: t("agents.save")
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
+        " ",
+        t("settings.testing")
       ]
-    }, undefined, true, undefined, this)
-  }, undefined, false, undefined, this);
+    }, undefined, true, undefined, this);
+  if (state.status === "ok")
+    return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("span", {
+      className: "test-result ok",
+      children: [
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(StatusDone, {
+          size: 13
+        }, undefined, false, undefined, this),
+        " ",
+        state.message ?? t("settings.testOk")
+      ]
+    }, undefined, true, undefined, this);
+  return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("span", {
+    className: "test-result fail",
+    children: [
+      "✕ ",
+      state.message ?? t("settings.testFail")
+    ]
+  }, undefined, true, undefined, this);
+}
+function SettingsView({
+  settings,
+  theme,
+  locale,
+  onSettings,
+  onTheme,
+  onLocale,
+  onExport,
+  onImport,
+  onReset,
+  storageBytes
+}) {
+  const { t } = useI18n();
+  const fileRef = import_react12.useRef(null);
+  const [aiTest, setAiTest] = import_react12.useState({ status: "idle" });
+  const [ghTest, setGhTest] = import_react12.useState({ status: "idle" });
+  const testAnthropic = async () => {
+    setAiTest({ status: "testing" });
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": settings.apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: settings.model || DEFAULT_AGENT_MODEL,
+          max_tokens: 1,
+          messages: [{ role: "user", content: "ping" }]
+        })
+      });
+      if (res.ok)
+        setAiTest({ status: "ok" });
+      else
+        setAiTest({ status: "fail", message: `HTTP ${res.status}` });
+    } catch (e) {
+      setAiTest({ status: "fail", message: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  const testGitHub = async () => {
+    setGhTest({ status: "testing" });
+    try {
+      const res = await fetch(`https://api.github.com/repos/${settings.githubRepo}`, {
+        headers: {
+          accept: "application/vnd.github+json",
+          authorization: `Bearer ${settings.githubToken}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGhTest({ status: "ok", message: `${data.full_name} @ ${data.default_branch}` });
+      } else {
+        setGhTest({ status: "fail", message: `HTTP ${res.status}` });
+      }
+    } catch (e) {
+      setGhTest({ status: "fail", message: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(jsx_dev_runtime18.Fragment, {
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("header", {
+        className: "panel-header",
+        children: /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+          className: "panel-header-left",
+          children: /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("span", {
+            className: "panel-title",
+            children: t("settings.title")
+          }, undefined, false, undefined, this)
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+        className: "settings-page",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("section", {
+            className: "settings-section",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("h3", {
+                className: "settings-section-title",
+                children: t("settings.aiSection")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("p", {
+                className: "settings-section-desc",
+                children: t("settings.aiDesc")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                className: "settings-label",
+                children: t("agents.apiKey")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                className: "settings-row",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                    className: "settings-input",
+                    type: "password",
+                    placeholder: "sk-ant-…",
+                    value: settings.apiKey,
+                    onChange: (e) => onSettings({ apiKey: e.target.value.trim() })
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: "btn sm",
+                    onClick: testAnthropic,
+                    disabled: !settings.apiKey,
+                    children: t("settings.test")
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(TestBadge, {
+                state: aiTest
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                className: "settings-label",
+                children: t("agents.model")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                className: "settings-input",
+                list: "model-options",
+                value: settings.model,
+                onChange: (e) => onSettings({ model: e.target.value.trim() || DEFAULT_AGENT_MODEL })
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("datalist", {
+                id: "model-options",
+                children: MODEL_OPTIONS.map((m) => /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("option", {
+                  value: m
+                }, m, false, undefined, this))
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                className: "settings-hint",
+                children: t("agents.apiKeyHint")
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("section", {
+            className: "settings-section",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("h3", {
+                className: "settings-section-title",
+                children: "GitHub"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("p", {
+                className: "settings-section-desc",
+                children: t("github.hint")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                className: "settings-label",
+                children: t("github.token")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                className: "settings-input",
+                type: "password",
+                placeholder: "ghp_… / github_pat_…",
+                value: settings.githubToken,
+                onChange: (e) => onSettings({ githubToken: e.target.value.trim() })
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                className: "settings-label",
+                children: t("github.repo")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                className: "settings-row",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                    className: "settings-input",
+                    placeholder: "owner/repository",
+                    value: settings.githubRepo,
+                    onChange: (e) => onSettings({
+                      githubRepo: e.target.value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "")
+                    })
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: "btn sm",
+                    onClick: testGitHub,
+                    disabled: !settings.githubToken || !settings.githubRepo,
+                    children: t("settings.test")
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(TestBadge, {
+                state: ghTest
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("section", {
+            className: "settings-section",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("h3", {
+                className: "settings-section-title",
+                children: t("settings.appearance")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                className: "settings-label",
+                children: t("settings.theme")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                className: "tab-group",
+                style: { display: "inline-flex" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: `tab${theme === "dark" ? " active" : ""}`,
+                    onClick: () => onTheme("dark"),
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(Moon, {
+                        size: 12
+                      }, undefined, false, undefined, this),
+                      " ",
+                      t("settings.dark")
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: `tab${theme === "light" ? " active" : ""}`,
+                    onClick: () => onTheme("light"),
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(Sun, {
+                        size: 12
+                      }, undefined, false, undefined, this),
+                      " ",
+                      t("settings.light")
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                className: "settings-label",
+                children: t("action.language")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                className: "tab-group",
+                style: { display: "inline-flex" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: `tab${locale === "en" ? " active" : ""}`,
+                    onClick: () => onLocale("en"),
+                    children: "English"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: `tab${locale === "zh" ? " active" : ""}`,
+                    onClick: () => onLocale("zh"),
+                    children: "中文"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("section", {
+            className: "settings-section",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("h3", {
+                className: "settings-section-title",
+                children: t("data.title")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("p", {
+                className: "settings-section-desc",
+                children: [
+                  t("data.hint"),
+                  " (",
+                  (storageBytes / 1024).toFixed(1),
+                  " KB)"
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                className: "settings-row",
+                style: { gap: 8 },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: "btn sm",
+                    onClick: onExport,
+                    children: t("data.export")
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: "btn sm",
+                    onClick: () => fileRef.current?.click(),
+                    children: t("data.import")
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                    className: "btn sm danger",
+                    onClick: onReset,
+                    children: t("palette.reset")
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                    ref: fileRef,
+                    type: "file",
+                    accept: "application/json",
+                    style: { display: "none" },
+                    onChange: (e) => {
+                      const f = e.target.files?.[0];
+                      if (f)
+                        onImport(f);
+                      e.target.value = "";
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("section", {
+            className: "settings-section",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("h3", {
+                className: "settings-section-title",
+                children: t("settings.about")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("p", {
+                className: "settings-section-desc",
+                children: [
+                  "Linage v0.1 — ",
+                  t("settings.aboutDesc"),
+                  " ",
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("a", {
+                    href: "https://github.com/kongbaifan/linear_app",
+                    target: "_blank",
+                    rel: "noreferrer",
+                    children: "GitHub"
+                  }, undefined, false, undefined, this),
+                  " · ",
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("a", {
+                    href: "https://linage-orpin.vercel.app",
+                    target: "_blank",
+                    rel: "noreferrer",
+                    children: "linage-orpin.vercel.app"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
 }
 
 // src/agent/engine.ts
-var import_react12 = __toESM(require_react(), 1);
+var import_react13 = __toESM(require_react(), 1);
 
 // src/agent/provider.ts
 var playbooks = [
@@ -24263,11 +24867,11 @@ function resolveEdits(codebase, edits, taskId) {
   return changes;
 }
 function useAgentEngine(state, dispatch) {
-  const running = import_react12.useRef(new Set);
-  import_react12.useEffect(() => {
+  const running = import_react13.useRef(new Set);
+  import_react13.useEffect(() => {
     state.agentTasks.filter((t) => t.status === "working" && !running.current.has(t.id)).forEach((t) => dispatch({ type: "agentStatus", id: t.id, status: "queued" }));
   }, []);
-  import_react12.useEffect(() => {
+  import_react13.useEffect(() => {
     const queued = state.agentTasks.filter((t) => t.status === "queued" && !running.current.has(t.id));
     queued.forEach((task) => {
       running.current.add(task.id);
@@ -24329,7 +24933,7 @@ function useAgentEngine(state, dispatch) {
 }
 
 // src/router.ts
-var import_react13 = __toESM(require_react(), 1);
+var import_react14 = __toESM(require_react(), 1);
 var DEFAULT_VIEW = { type: "issue", id: "ENG-2703" };
 function viewToHash(v) {
   switch (v.type) {
@@ -24347,6 +24951,8 @@ function viewToHash(v) {
       return "#/agents";
     case "task":
       return `#/task/${v.id}`;
+    case "settings":
+      return "#/settings";
   }
 }
 function parseHash(hash) {
@@ -24367,18 +24973,20 @@ function parseHash(hash) {
       return { type: "agents" };
     case "task":
       return b ? { type: "task", id: b } : { type: "agents" };
+    case "settings":
+      return { type: "settings" };
     default:
       return DEFAULT_VIEW;
   }
 }
 function useHashRoute() {
-  const [view, setViewState] = import_react13.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
-  import_react13.useEffect(() => {
+  const [view, setViewState] = import_react14.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
+  import_react14.useEffect(() => {
     const onHash = () => setViewState(parseHash(window.location.hash));
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const navigate = import_react13.useCallback((v) => {
+  const navigate = import_react14.useCallback((v) => {
     const hash = viewToHash(v);
     if (window.location.hash === hash) {
       setViewState(v);
@@ -24389,256 +24997,6 @@ function useHashRoute() {
   return [view, navigate];
 }
 
-// src/store.ts
-var import_react14 = __toESM(require_react(), 1);
-
-// src/data/codebase.ts
-var initialCodebase = {
-  "client/src/views/RideHistory/useRideHistory.ts": `import { useComputed } from '@ride/reactive'
-import { ridesAwaitingPickup, ridesInProgress, completedRides } from './rideStore'
-
-export interface RideSection {
-  title: string
-  rideIds: string[]
-}
-
-// Build sections from ride history state
-export function useRideHistory() {
-  const waitingStatusById: Map<string, string> = useComputed(() => {
-    const map = new Map<string, string>()
-    for (const ride of ridesAwaitingPickup) {
-      map.set(ride.id, 'Driver en route')
-    }
-    for (const ride of ridesInProgress) {
-      map.set(ride.id, 'Trip in progress')
-    }
-    return map
-  })
-
-  const sections: RideSection[] = useComputed(() => [
-    { title: 'Active', rideIds: [...waitingStatusById.keys()] },
-    { title: 'Past', rideIds: completedRides.map((r) => r.id) },
-  ])
-
-  return { sections, waitingStatusById }
-}
-`,
-  "client/src/views/RideHistory/RideHistoryPage.tsx": `import styled from 'styled-components'
-import { useRideHistory } from './useRideHistory'
-import { RideCard } from './RideCard'
-
-const Card = styled.div\`
-  border-radius: 10px;
-  padding: 14px 16px;
-  background-color: \${(props) => props.theme.color.bgBase};
-  box-shadow: none;
-  opacity: 1;
-\`
-
-export function RideHistoryPage() {
-  const { sections, waitingStatusById } = useRideHistory()
-
-  return (
-    <main>
-      {sections.map((section) => (
-        <section key={section.title}>
-          <h2>{section.title}</h2>
-          {section.rideIds.map((id) => (
-            <Card key={id}>
-              <RideCard rideId={id} byline={waitingStatusById.get(id)} />
-            </Card>
-          ))}
-        </section>
-      ))}
-    </main>
-  )
-}
-`,
-  "client/src/startup/AppBoot.swift": `import UIKit
-
-final class AppBoot {
-    static let shared = AppBoot()
-
-    func launch(window: UIWindow) {
-        let store = RideStore.shared
-
-        // Block until the full vehicle_state payload has been refreshed.
-        store.refreshVehicleState(mode: .full)
-        store.waitUntilSynced()
-
-        window.rootViewController = HomeViewController(store: store)
-        window.makeKeyAndVisible()
-    }
-
-    func warmCaches() {
-        MapTileCache.shared.preload(region: .lastKnown)
-        ReceiptCache.shared.trim(olderThanDays: 30)
-    }
-}
-`
-};
-
-// src/store.ts
-var DEFAULT_AGENT_MODEL = "claude-sonnet-4-5";
-var STORAGE_KEY = "linear-clone-state-v1";
-function defaultState() {
-  return {
-    issues,
-    notifications,
-    theme: "dark",
-    locale: "en",
-    agentTasks: [],
-    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL, githubToken: "", githubRepo: "" },
-    codebase: { ...initialCodebase }
-  };
-}
-function sanitizeState(parsed) {
-  if (!parsed || !Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
-    return defaultState();
-  }
-  return {
-    issues: parsed.issues,
-    notifications: parsed.notifications,
-    theme: parsed.theme === "light" ? "light" : "dark",
-    locale: parsed.locale === "zh" ? "zh" : "en",
-    agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
-    settings: {
-      apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
-      model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL,
-      githubToken: typeof parsed.settings?.githubToken === "string" ? parsed.settings.githubToken : "",
-      githubRepo: typeof parsed.settings?.githubRepo === "string" ? parsed.settings.githubRepo : ""
-    },
-    codebase: parsed.codebase && typeof parsed.codebase === "object" ? { ...initialCodebase, ...parsed.codebase } : { ...initialCodebase }
-  };
-}
-function loadState() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw)
-      return defaultState();
-    return sanitizeState(JSON.parse(raw));
-  } catch {
-    return defaultState();
-  }
-}
-function serializeState(state) {
-  return JSON.stringify(state, null, 2);
-}
-function saveState(state) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {}
-}
-function reducer(state, action) {
-  switch (action.type) {
-    case "updateIssue":
-      return {
-        ...state,
-        issues: state.issues.map((i) => i.id === action.id ? { ...i, ...action.patch } : i)
-      };
-    case "addIssue":
-      return { ...state, issues: [action.issue, ...state.issues] };
-    case "moveIssue": {
-      const { dragId, status, beforeId } = action;
-      const dragged = state.issues.find((i) => i.id === dragId);
-      if (!dragged || dragId === beforeId)
-        return state;
-      const rest = state.issues.filter((i) => i.id !== dragId);
-      const updated = { ...dragged, status };
-      let issues2;
-      if (beforeId) {
-        const idx = rest.findIndex((i) => i.id === beforeId);
-        issues2 = idx >= 0 ? [...rest.slice(0, idx), updated, ...rest.slice(idx)] : [...rest, updated];
-      } else {
-        issues2 = [...rest, updated];
-      }
-      return { ...state, issues: issues2 };
-    }
-    case "readNotification":
-      return {
-        ...state,
-        notifications: state.notifications.map((n) => n.id === action.id ? { ...n, unread: false } : n)
-      };
-    case "readAllNotifications":
-      return {
-        ...state,
-        notifications: state.notifications.map((n) => ({ ...n, unread: false }))
-      };
-    case "setTheme":
-      return { ...state, theme: action.theme };
-    case "setLocale":
-      return { ...state, locale: action.locale };
-    case "delegate":
-      return { ...state, agentTasks: [action.task, ...state.agentTasks] };
-    case "agentStep":
-      return {
-        ...state,
-        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, steps: [...t.steps, action.step] } : t)
-      };
-    case "agentStatus":
-      return {
-        ...state,
-        agentTasks: state.agentTasks.map((t) => t.id === action.id ? {
-          ...t,
-          status: action.status,
-          summary: action.summary ?? t.summary,
-          finishedAt: action.status === "needsReview" || action.status === "done" || action.status === "failed" ? Date.now() : t.finishedAt
-        } : t)
-      };
-    case "agentResult":
-      return {
-        ...state,
-        agentTasks: state.agentTasks.map((t) => t.id === action.id ? {
-          ...t,
-          status: "needsReview",
-          summary: action.summary,
-          changes: action.changes,
-          baseBranch: action.baseBranch ?? t.baseBranch,
-          finishedAt: Date.now()
-        } : t)
-      };
-    case "githubApplied":
-      return {
-        ...state,
-        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, status: "done", prUrl: action.prUrl, branch: action.branch } : t)
-      };
-    case "applyChanges": {
-      const task = state.agentTasks.find((t) => t.id === action.id);
-      if (!task || task.status !== "needsReview")
-        return state;
-      const codebase = { ...state.codebase };
-      for (const change of task.changes ?? []) {
-        codebase[change.path] = change.after;
-      }
-      return {
-        ...state,
-        codebase,
-        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, status: "done" } : t)
-      };
-    }
-    case "setSettings":
-      return { ...state, settings: { ...state.settings, ...action.settings } };
-    case "importState":
-      return sanitizeState(action.data);
-    case "reset":
-      return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings };
-    default:
-      return state;
-  }
-}
-function nextIssueId(issues2) {
-  const maxNum = Math.max(...issues2.map((i) => parseInt(i.id.split("-")[1], 10)));
-  return `ENG-${maxNum + 1}`;
-}
-function useAppStore() {
-  const [state, dispatch] = import_react14.useReducer(reducer, undefined, loadState);
-  import_react14.useEffect(() => saveState(state), [state]);
-  import_react14.useEffect(() => {
-    document.documentElement.dataset.theme = state.theme;
-  }, [state.theme]);
-  return { state, dispatch };
-}
-
 // src/App.tsx
 var jsx_dev_runtime19 = __toESM(require_jsx_dev_runtime(), 1);
 function App() {
@@ -24646,7 +25004,6 @@ function App() {
   const [view, navigate] = useHashRoute();
   const [paletteOpen, setPaletteOpen] = import_react15.useState(false);
   const [modalOpen, setModalOpen] = import_react15.useState(false);
-  const [settingsOpen, setSettingsOpen] = import_react15.useState(false);
   const [selectedId, setSelectedId] = import_react15.useState(state.issues[0]?.id ?? null);
   const allIssues = state.issues;
   const orderedIds = import_react15.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
@@ -24787,7 +25144,33 @@ function App() {
                 if (task)
                   approveTask(task);
               },
-              onOpenSettings: () => setSettingsOpen(true)
+              onOpenSettings: () => navigate({ type: "settings" })
+            }, undefined, false, undefined, this),
+            view.type === "settings" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(SettingsView, {
+              settings: state.settings,
+              theme: state.theme,
+              locale: state.locale,
+              onSettings: (patch) => dispatch({ type: "setSettings", settings: patch }),
+              onTheme: (th) => dispatch({ type: "setTheme", theme: th }),
+              onLocale: (lo) => dispatch({ type: "setLocale", locale: lo }),
+              onExport: () => {
+                const blob = new Blob([serializeState(state)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `linage-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              },
+              onImport: (file) => {
+                file.text().then((text) => {
+                  try {
+                    dispatch({ type: "importState", data: JSON.parse(text) });
+                  } catch {}
+                });
+              },
+              onReset: () => dispatch({ type: "reset" }),
+              storageBytes: serializeState(state).length
             }, undefined, false, undefined, this),
             view.type === "task" && (() => {
               const task = state.agentTasks.find((a) => a.id === view.id);
@@ -24840,28 +25223,6 @@ function App() {
           onCreate: (p) => {
             addIssue(p);
             setModalOpen(false);
-          }
-        }, undefined, false, undefined, this),
-        settingsOpen && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(SettingsModal, {
-          settings: state.settings,
-          onSave: (s) => dispatch({ type: "setSettings", settings: s }),
-          onClose: () => setSettingsOpen(false),
-          onExport: () => {
-            const blob = new Blob([serializeState(state)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `linage-backup-${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-          },
-          onImport: (file) => {
-            file.text().then((text) => {
-              try {
-                dispatch({ type: "importState", data: JSON.parse(text) });
-                setSettingsOpen(false);
-              } catch {}
-            });
           }
         }, undefined, false, undefined, this)
       ]

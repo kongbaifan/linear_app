@@ -10,7 +10,7 @@ import NewIssueModal from './components/NewIssueModal'
 import { FloatingAgentPanel } from './components/AgentPanel'
 import AgentTasksView from './components/AgentTasksView'
 import TaskDiffView from './components/TaskDiffView'
-import SettingsModal from './components/SettingsModal'
+import SettingsView from './components/SettingsView'
 import { useAgentEngine } from './agent/engine'
 import type { Issue } from './data/mock'
 import { statusOrder } from './components/meta'
@@ -26,7 +26,6 @@ export default function App() {
   const [view, navigate] = useHashRoute()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
 
   const allIssues = state.issues
@@ -205,7 +204,37 @@ export default function App() {
               const task = state.agentTasks.find((a) => a.id === id)
               if (task) approveTask(task)
             }}
-            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenSettings={() => navigate({ type: 'settings' })}
+          />
+        )}
+        {view.type === 'settings' && (
+          <SettingsView
+            settings={state.settings}
+            theme={state.theme}
+            locale={state.locale}
+            onSettings={(patch) => dispatch({ type: 'setSettings', settings: patch })}
+            onTheme={(th) => dispatch({ type: 'setTheme', theme: th })}
+            onLocale={(lo) => dispatch({ type: 'setLocale', locale: lo })}
+            onExport={() => {
+              const blob = new Blob([serializeState(state)], { type: 'application/json' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `linage-backup-${new Date().toISOString().slice(0, 10)}.json`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+            onImport={(file) => {
+              file.text().then((text) => {
+                try {
+                  dispatch({ type: 'importState', data: JSON.parse(text) })
+                } catch {
+                  // invalid file — ignore
+                }
+              })
+            }}
+            onReset={() => dispatch({ type: 'reset' })}
+            storageBytes={serializeState(state).length}
           />
         )}
         {view.type === 'task' && (() => {
@@ -257,32 +286,7 @@ export default function App() {
       {modalOpen && (
         <NewIssueModal onClose={() => setModalOpen(false)} onCreate={(p) => { addIssue(p); setModalOpen(false) }} />
       )}
-      {settingsOpen && (
-        <SettingsModal
-          settings={state.settings}
-          onSave={(s) => dispatch({ type: 'setSettings', settings: s })}
-          onClose={() => setSettingsOpen(false)}
-          onExport={() => {
-            const blob = new Blob([serializeState(state)], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `linage-backup-${new Date().toISOString().slice(0, 10)}.json`
-            a.click()
-            URL.revokeObjectURL(url)
-          }}
-          onImport={(file) => {
-            file.text().then((text) => {
-              try {
-                dispatch({ type: 'importState', data: JSON.parse(text) })
-                setSettingsOpen(false)
-              } catch {
-                // invalid file — ignore
-              }
-            })
-          }}
-        />
-      )}
+
     </div>
     </I18nProvider>
   )

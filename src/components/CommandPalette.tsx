@@ -66,6 +66,13 @@ export default function CommandPalette({
         run: onToggleLocale,
       },
       {
+        key: 'settings',
+        section: t('palette.navigation'),
+        label: t('palette.goSettings'),
+        icon: <Search size={14} />,
+        run: () => onNavigate({ type: 'settings' }),
+      },
+      {
         key: 'reset',
         section: t('palette.actions'),
         label: t('palette.reset'),

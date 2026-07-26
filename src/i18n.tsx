@@ -141,6 +141,20 @@ const en = {
   'agents.status.applying': 'Applying',
   'task.applying': 'Pushing to GitHub…',
   'task.viewPr': 'View pull request',
+  'settings.title': 'Settings',
+  'settings.aiSection': 'AI provider',
+  'settings.aiDesc': 'The agent uses Claude via your own Anthropic API key. Without a key it runs in deterministic simulation mode.',
+  'settings.appearance': 'Appearance',
+  'settings.theme': 'Theme',
+  'settings.dark': 'Dark',
+  'settings.light': 'Light',
+  'settings.test': 'Test connection',
+  'settings.testing': 'Testing…',
+  'settings.testOk': 'Connected',
+  'settings.testFail': 'Connection failed',
+  'settings.about': 'About',
+  'settings.aboutDesc': 'a Linear-quality personal AI coding workbench.',
+  'palette.goSettings': 'Open Settings',
 }
 
 export type MessageKey = keyof typeof en
@@ -269,6 +283,20 @@ const zh: Record<MessageKey, string> = {
   'agents.status.applying': '应用中',
   'task.applying': '正在推送到 GitHub…',
   'task.viewPr': '查看 Pull Request',
+  'settings.title': '设置',
+  'settings.aiSection': 'AI 提供方',
+  'settings.aiDesc': 'Agent 通过你自己的 Anthropic API key 调用 Claude。未填写时使用内置的确定性模拟引擎。',
+  'settings.appearance': '外观',
+  'settings.theme': '主题',
+  'settings.dark': '深色',
+  'settings.light': '亮色',
+  'settings.test': '测试连接',
+  'settings.testing': '测试中…',
+  'settings.testOk': '连接成功',
+  'settings.testFail': '连接失败',
+  'settings.about': '关于',
+  'settings.aboutDesc': 'Linear 品质的个人 AI 编程工作台。',
+  'palette.goSettings': '打开设置',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }

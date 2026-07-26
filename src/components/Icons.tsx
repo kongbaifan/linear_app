@@ -308,3 +308,15 @@ export const Moon = ({ size = 14 }: P) => (
     <path d="M13.5 9.7A5.8 5.8 0 0 1 6.3 2.5a5.8 5.8 0 1 0 7.2 7.2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
   </S>
 )
+
+export const Gear = ({ size = 14 }: P) => (
+  <S size={size}>
+    <circle cx="8" cy="8" r="2.2" stroke="currentColor" strokeWidth="1.3" />
+    <path
+      d="M8 1.8l.9 1.8 2-.3 1 1.7 1.7 1-.3 2 1.5 1.3-1.5 1.3.3 2-1.7 1-1 1.7-2-.3-.9 1.8-.9-1.8-2 .3-1-1.7-1.7-1 .3-2L1.2 8l1.5-1.3-.3-2 1.7-1 1-1.7 2 .3L8 1.8Z"
+      stroke="currentColor"
+      strokeWidth="1.1"
+      strokeLinejoin="round"
+    />
+  </S>
+)

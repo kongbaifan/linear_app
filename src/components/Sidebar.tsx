@@ -2,6 +2,7 @@ import type { View } from '../App'
 import { useI18n, type Locale } from '../i18n'
 import {
   AgentTasks,
+  Gear,
   ChevronDown,
   Compose,
   Inbox,
@@ -54,6 +55,9 @@ export default function Sidebar({
           <ChevronDown size={11} />
         </button>
         <div className="sidebar-top-actions">
+          <button className="icon-btn" title={t('settings.title')} onClick={() => onNavigate({ type: 'settings' })}>
+            <Gear size={14} />
+          </button>
           <button className="icon-btn lang-btn" title={t('action.language')} onClick={onToggleLocale}>
             {locale === 'en' ? '中' : 'EN'}
           </button>
