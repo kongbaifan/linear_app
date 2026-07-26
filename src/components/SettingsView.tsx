@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { AgentSettings, ProviderProfile, Theme } from '../store'
 import { PROVIDER_DEFAULTS, SIMULATED_ID } from '../store'
-import { anthropicHeaders, anthropicMessagesUrl } from '../agent/provider'
+import { anthropicHeaders, anthropicMessagesUrl, proxied } from '../agent/provider'
 import { useI18n, type Locale } from '../i18n'
 import { Moon, StatusDone, Sun } from './Icons'
 
@@ -83,52 +83,73 @@ export default function SettingsView({
 
   const setTest = (key: string, state: TestState) => setTests((s) => ({ ...s, [key]: state }))
 
-  const testProfile = async (p: Omit<ProviderProfile, 'id' | 'name'>, key: string) => {
+  const testProfile = async (p: ProviderProfile, key: string, isDraft = false) => {
     setTest(key, { status: 'testing' })
-    try {
-      const res =
-        p.kind === 'anthropic'
-          ? await fetch(anthropicMessagesUrl(p.baseUrl), {
-              method: 'POST',
-              headers: anthropicHeaders(p.apiKey, p.baseUrl),
-              body: JSON.stringify({
-                model: p.model,
-                max_tokens: 1,
-                messages: [{ role: 'user', content: 'ping' }],
-              }),
-            })
-          : await fetch(`${stripSlash(p.baseUrl || PROVIDER_DEFAULTS.openai.baseUrl)}/chat/completions`, {
-              method: 'POST',
-              headers: {
-                'content-type': 'application/json',
-                authorization: `Bearer ${p.apiKey}`,
-              },
-              body: JSON.stringify({
-                model: p.model,
-                max_tokens: 1,
-                messages: [{ role: 'user', content: 'ping' }],
-              }),
-            })
+    const { url, headers } =
+      p.kind === 'anthropic'
+        ? { url: anthropicMessagesUrl(p.baseUrl), headers: anthropicHeaders(p.apiKey, p.baseUrl) }
+        : {
+            url: `${stripSlash(p.baseUrl || PROVIDER_DEFAULTS.openai.baseUrl)}/chat/completions`,
+            headers: {
+              'content-type': 'application/json',
+              authorization: `Bearer ${p.apiKey}`,
+            } as Record<string, string>,
+          }
+    const post = (u: string) =>
+      fetch(u, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model: p.model, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }),
+      })
+    const report = async (res: Response, viaProxy: boolean) => {
       if (res.ok) {
-        setTest(key, { status: 'ok', message: `${p.model} · ${t('settings.testOk')}` })
-      } else {
-        // Surface the server's own error text — 401 vs 404 vs bad model
-        // are very different fixes.
-        let detail = `HTTP ${res.status}`
-        try {
-          const data = await res.json()
-          const msg = data?.error?.message ?? data?.message
-          if (msg) detail += ` — ${String(msg).slice(0, 140)}`
-        } catch {
-          // non-JSON error body
+        // Guard against SPA-fallback servers answering /api/proxy with HTML.
+        const ct = res.headers.get('content-type') ?? ''
+        if (viaProxy && !ct.includes('json') && !ct.includes('event-stream')) {
+          setTest(key, { status: 'fail', message: t('settings.corsFail') })
+          return
         }
-        setTest(key, { status: 'fail', message: detail })
+        if (viaProxy && !p.proxy) {
+          // Direct was CORS-blocked but the proxy works — remember that.
+          if (isDraft) setDraft((d) => d && { ...d, proxy: true })
+          else onSaveProfile({ ...p, proxy: true })
+          setTest(key, { status: 'ok', message: t('settings.proxyWorked') })
+        } else {
+          setTest(key, { status: 'ok', message: `${p.model} · ${t('settings.testOk')}` })
+        }
+        return
       }
+      // Surface the server's own error text — 401 vs 404 vs bad model
+      // are very different fixes.
+      let detail = `HTTP ${res.status}`
+      try {
+        const data = await res.json()
+        const msg = data?.error?.message ?? data?.message
+        if (msg) detail += ` — ${String(msg).slice(0, 140)}`
+      } catch {
+        // non-JSON error body
+      }
+      setTest(key, { status: 'fail', message: viaProxy ? `${detail} (via proxy)` : detail })
+    }
+    try {
+      await report(await post(p.proxy ? proxied(url) : url), p.proxy === true)
     } catch (e) {
-      // fetch TypeError = the request never reached the server: CORS or DNS.
-      const message =
-        e instanceof TypeError ? t('settings.corsFail') : e instanceof Error ? e.message : String(e)
-      setTest(key, { status: 'fail', message })
+      if (!(e instanceof TypeError) || p.proxy) {
+        setTest(key, { status: 'fail', message: e instanceof Error ? e.message : String(e) })
+        return
+      }
+      // Direct call never reached the server (CORS/DNS) — probe the proxy.
+      try {
+        const res = await post(proxied(url))
+        if (res.status === 404) {
+          // No proxy here (plain local dev) — report the original diagnosis.
+          setTest(key, { status: 'fail', message: t('settings.corsFail') })
+        } else {
+          await report(res, true)
+        }
+      } catch {
+        setTest(key, { status: 'fail', message: t('settings.corsFail') })
+      }
     }
   }
 
@@ -227,6 +248,7 @@ export default function SettingsView({
                     <span className="provider-kind-badge">
                       {p.kind === 'anthropic' ? 'Claude' : 'OpenAI'}
                     </span>
+                    {p.proxy && <span className="provider-kind-badge">{t('provider.proxyBadge')}</span>}
                   </span>
                   <span className="provider-url">
                     {p.baseUrl || PROVIDER_DEFAULTS[p.kind].baseUrl} · {p.model}
@@ -329,9 +351,19 @@ export default function SettingsView({
                 ))}
               </datalist>
 
+              <label className="settings-check">
+                <input
+                  type="checkbox"
+                  checked={draft.proxy === true}
+                  onChange={(e) => setDraft({ ...draft, proxy: e.target.checked })}
+                />
+                <span>{t('provider.proxy')}</span>
+              </label>
+              <div className="settings-hint">{t('provider.proxyHint')}</div>
+
               <TestBadge state={tests['draft']} />
               <div className="settings-row" style={{ gap: 8, marginTop: 10 }}>
-                <button className="btn sm" onClick={() => testProfile(draft, 'draft')} disabled={!draft.apiKey}>
+                <button className="btn sm" onClick={() => testProfile(draft, 'draft', true)} disabled={!draft.apiKey}>
                   {t('settings.test')}
                 </button>
                 <button

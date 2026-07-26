@@ -87,6 +87,12 @@ function parseAgentJson(text: string): AgentRunResult {
 
 const stripSlash = (u: string) => u.replace(/\/+$/, '')
 
+/** Same-origin proxy path (Vercel serverless, see api/proxy.js) for relay
+ *  stations that don't allow browser cross-origin calls. */
+export const proxied = (url: string) => `/api/proxy?url=${encodeURIComponent(url)}`
+
+const maybeProxied = (url: string, useProxy?: boolean) => (useProxy ? proxied(url) : url)
+
 // ─── Simulated provider ─────────────────────────────────────────
 
 interface Playbook {
@@ -274,15 +280,18 @@ export function anthropicHeaders(apiKey: string, baseUrl: string): Record<string
 
 export const anthropicProvider: AgentProvider = {
   async run(input) {
-    const res = await fetch(anthropicMessagesUrl(input.provider.baseUrl), {
-      method: 'POST',
-      headers: anthropicHeaders(input.provider.apiKey, input.provider.baseUrl),
-      body: JSON.stringify({
-        model: input.provider.model,
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: buildPrompt(input) }],
-      }),
-    })
+    const res = await fetch(
+      maybeProxied(anthropicMessagesUrl(input.provider.baseUrl), input.provider.proxy),
+      {
+        method: 'POST',
+        headers: anthropicHeaders(input.provider.apiKey, input.provider.baseUrl),
+        body: JSON.stringify({
+          model: input.provider.model,
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: buildPrompt(input) }],
+        }),
+      },
+    )
     if (!res.ok) throw new Error(`Anthropic API ${res.status}`)
     const data = await res.json()
     return parseAgentJson(data.content?.[0]?.text ?? '')
@@ -296,7 +305,7 @@ export const DEFAULT_OPENAI_BASE = 'https://api.openai.com/v1'
 export const openaiProvider: AgentProvider = {
   async run(input) {
     const base = stripSlash(input.provider.baseUrl || DEFAULT_OPENAI_BASE)
-    const res = await fetch(`${base}/chat/completions`, {
+    const res = await fetch(maybeProxied(`${base}/chat/completions`, input.provider.proxy), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -442,7 +451,7 @@ export async function chatReply(
   }
   try {
     if (provider.kind === 'anthropic' && provider.apiKey) {
-      const res = await fetch(anthropicMessagesUrl(provider.baseUrl), {
+      const res = await fetch(maybeProxied(anthropicMessagesUrl(provider.baseUrl), provider.proxy), {
         method: 'POST',
         headers: anthropicHeaders(provider.apiKey, provider.baseUrl),
         body: JSON.stringify({
@@ -465,7 +474,7 @@ export async function chatReply(
       }
     } else if (provider.kind === 'openai' && provider.apiKey) {
       const base = stripSlash(provider.baseUrl || DEFAULT_OPENAI_BASE)
-      const res = await fetch(`${base}/chat/completions`, {
+      const res = await fetch(maybeProxied(`${base}/chat/completions`, provider.proxy), {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

@@ -84,6 +84,8 @@ export interface ProviderSettings {
   baseUrl: string
   apiKey: string
   model: string
+  /** Route requests through /api/proxy (CORS-blocked relay stations). */
+  proxy?: boolean
 }
 
 /** A saved provider configuration, ccswitch-style: keep several, one active. */
@@ -94,6 +96,8 @@ export interface ProviderProfile {
   baseUrl: string
   apiKey: string
   model: string
+  /** Route requests through /api/proxy (CORS-blocked relay stations). */
+  proxy?: boolean
 }
 
 /** activeProviderId value meaning "no real provider — built-in simulator". */
@@ -208,6 +212,7 @@ const profileToProvider = (p: ProviderProfile): ProviderSettings => ({
   baseUrl: p.baseUrl,
   apiKey: p.apiKey,
   model: p.model,
+  proxy: p.proxy === true,
 })
 
 function sanitizeSettings(settings: any): AgentSettings {
@@ -222,6 +227,7 @@ function sanitizeSettings(settings: any): AgentSettings {
           baseUrl: typeof p.baseUrl === 'string' ? p.baseUrl : '',
           apiKey: typeof p.apiKey === 'string' ? p.apiKey : '',
           model: typeof p.model === 'string' ? p.model : '',
+          proxy: p.proxy === true,
         }))
     : []
   let activeProviderId =

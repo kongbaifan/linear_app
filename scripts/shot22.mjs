@@ -37,6 +37,11 @@ await ctx.route('https://relay401.example/**', (route) =>
   route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { message: 'invalid api key' } }) }),
 )
 await ctx.route('https://dead.example/**', (route) => route.abort('failed'))
+// plain local dev: the proxy function does not exist → 404 (the auto-probe
+// must fall back to the CORS diagnosis instead of a false positive)
+await ctx.route('**/api/proxy*', (route) =>
+  route.fulfill({ status: 404, contentType: 'text/html', body: 'not found' }),
+)
 
 const page = await ctx.newPage()
 const errors = []

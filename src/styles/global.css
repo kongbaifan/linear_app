@@ -3048,3 +3048,19 @@ body,
   background: var(--bg-hover);
   border-color: var(--border-strong);
 }
+
+/* proxy toggle */
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  font-size: var(--fz-sm);
+  color: var(--text-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-check input {
+  accent-color: var(--accent);
+}
