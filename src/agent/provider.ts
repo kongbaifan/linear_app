@@ -21,6 +21,12 @@ export interface AgentRunInput {
   description?: string
   /** Prior chat transcript when the issue came from a conversation. */
   conversation?: string
+  /** Review feedback: redo the work, building on the previous attempt. */
+  revision?: {
+    instruction: string
+    previousSummary?: string
+    previousFiles: { path: string; after: string }[]
+  }
   provider: ProviderSettings
   codebase: Record<string, string>
 }
@@ -45,7 +51,14 @@ function buildPrompt(input: AgentRunInput): string {
   const discussion = input.conversation
     ? `\n\nThis issue came out of a conversation with the user. Prior discussion (context — honor decisions made here):\n${input.conversation}`
     : ''
-  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}${discussion}
+  const revision = input.revision
+    ? `\n\nREVISION ROUND. Your previous attempt${
+        input.revision.previousSummary ? ` (summary: "${input.revision.previousSummary}")` : ''
+      } produced these file versions:\n${input.revision.previousFiles
+        .map((f) => `--- ${f.path} (your previous result) ---\n${f.after}`)
+        .join('\n\n')}\n\nThe user reviewed it and asks: "${input.revision.instruction}"\nProduce a NEW complete set of edits against the ORIGINAL codebase below that incorporates this feedback.`
+    : ''
+  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}${discussion}${revision}
 
 Here is the codebase:
 
@@ -184,6 +197,29 @@ export const simulatedProvider: AgentProvider = {
   async run(input) {
     const pb = playbooks.find((p) => p.match.test(input.title)) ?? defaultPlaybook
     const applicable = pb.edits.some((e) => input.codebase[e.path]?.includes(e.find))
+
+    // Revision round: re-run the playbook but visibly fold the feedback in,
+    // so demo mode demonstrates the review loop honestly.
+    if (input.revision) {
+      const base = applicable ? pb : defaultPlaybook
+      const marker = `\n// [revision] ${input.revision.instruction}`
+      const edits = base.edits
+        .filter((e) => input.codebase[e.path]?.includes(e.find))
+        .map((e) => ({ ...e, replace: e.replace + marker }))
+      if (edits.length > 0) {
+        return {
+          steps: [
+            'Read the review feedback',
+            `Applying revision: ${input.revision.instruction}`,
+            'Updated the previous proposal',
+            'Re-ran checks on the revised change',
+          ],
+          summary: `Revised per feedback: ${input.revision.instruction}`,
+          edits,
+        }
+      }
+    }
+
     if (applicable) return { steps: pb.steps, summary: pb.summary, edits: pb.edits }
 
     // Unknown codebase (e.g. a real GitHub repo without an API key):

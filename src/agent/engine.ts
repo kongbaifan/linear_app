@@ -80,11 +80,23 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
             return
           }
         }
+        const lastRevision = task.revisions?.[task.revisions.length - 1]
         const input = {
           issueId: task.issueId,
           title: task.title,
           description: task.description,
           conversation: task.context,
+          revision:
+            lastRevision && task.changes?.length
+              ? {
+                  instruction: lastRevision.instruction,
+                  previousSummary: task.summary,
+                  previousFiles: task.changes.map((c) => ({
+                    path: c.path,
+                    after: c.after.length > 3000 ? `${c.after.slice(0, 3000)}\n…(truncated)` : c.after,
+                  })),
+                }
+              : undefined,
           provider: state.settings.provider,
           codebase,
         }

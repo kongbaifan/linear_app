@@ -34,6 +34,8 @@ export interface AgentTask {
   model: string
   /** Conversation transcript frozen at delegation time (chat → task). */
   context?: string
+  /** Review-page revision requests, in order (task → conversation). */
+  revisions?: { instruction: string; time: number }[]
   steps: string[]
   summary?: string
   changes?: FileChange[]
@@ -127,6 +129,7 @@ export type Action =
   | { type: 'applyChanges'; id: string }
   | { type: 'githubApplied'; id: string; prUrl: string; branch: string }
   | { type: 'retryTask'; id: string }
+  | { type: 'reviseTask'; id: string; instruction: string }
   | { type: 'newChat'; thread: ChatThread }
   | { type: 'chatMessage'; threadId: string; message: ChatMessage }
   | { type: 'setChatModel'; threadId: string; model: string }
@@ -439,6 +442,27 @@ export function reducer(state: AppState, action: Action): AppState {
         ),
       }
     }
+    case 'reviseTask':
+      // A revision re-queues the task, keeping the previous summary and
+      // changes in place — the engine hands them to the provider as the
+      // "previous attempt" so the new round builds on review feedback.
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id && t.status === 'needsReview'
+            ? {
+                ...t,
+                status: 'queued' as const,
+                steps: [],
+                finishedAt: undefined,
+                revisions: [
+                  ...(t.revisions ?? []),
+                  { instruction: action.instruction, time: Date.now() },
+                ],
+              }
+            : t,
+        ),
+      }
     case 'newChat':
       return { ...state, chats: [action.thread, ...state.chats].slice(0, MAX_CHAT_THREADS) }
     case 'chatMessage':

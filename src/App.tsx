@@ -435,6 +435,7 @@ export default function App() {
               onBack={() => navigate({ type: 'agents' })}
               onApprove={() => approveTask(task)}
               onOpenIssue={openIssue}
+              onRevise={(instruction) => dispatch({ type: 'reviseTask', id: task.id, instruction })}
             />
           )
         })()}

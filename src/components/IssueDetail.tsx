@@ -53,6 +53,15 @@ function buildActivity(issue: Issue, tasks: AgentTask[]): ActivityEvent[] {
       time: task.createdAt,
       taskId: task.id,
     })
+    for (const rev of task.revisions ?? []) {
+      events.push({
+        icon: <Avatar user="me" size="sm" />,
+        textKey: 'activity.revised',
+        extra: rev.instruction,
+        time: rev.time,
+        taskId: task.id,
+      })
+    }
     if (task.status === 'needsReview' || task.status === 'done' || task.status === 'applying') {
       events.push({
         icon: <BotAvatar size="sm" />,
@@ -185,7 +194,9 @@ export default function IssueDetail({
                       </>
                     )}
                     {ev.extra &&
-                      (ev.textKey === 'activity.finished' || ev.textKey === 'activity.failed') && (
+                      (ev.textKey === 'activity.finished' ||
+                        ev.textKey === 'activity.failed' ||
+                        ev.textKey === 'activity.revised') && (
                         <span style={{ color: 'var(--text-3)' }}> — {ev.extra}</span>
                       )}
                     {ev.taskId &&

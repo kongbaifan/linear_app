@@ -1,9 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { AgentTask } from '../store'
 import { renderDiff } from '../agent/diff'
 import { useI18n } from '../i18n'
 import { BotAvatar } from './Avatar'
-import { FileIcon, GitBranch, StatusDone } from './Icons'
+import { ArrowUp, FileIcon, GitBranch, StatusDone } from './Icons'
 
 function DiffCard({ file }: { file: ReturnType<typeof renderDiff> }) {
   return (
@@ -48,19 +48,30 @@ export default function TaskDiffView({
   onBack,
   onApprove,
   onOpenIssue,
+  onRevise,
 }: {
   task: AgentTask
   onBack: () => void
   onApprove: () => void
   onOpenIssue: (id: string) => void
+  onRevise: (instruction: string) => void
 }) {
   const { t } = useI18n()
+  const [revision, setRevision] = useState('')
   const files = useMemo(
     () => (task.changes ?? []).map((c) => renderDiff(c.path, c.before, c.after)),
     [task.changes],
   )
   const added = files.reduce((n, f) => n + f.added, 0)
   const removed = files.reduce((n, f) => n + f.removed, 0)
+  const working = task.status === 'queued' || task.status === 'working'
+
+  const submitRevision = () => {
+    const text = revision.trim()
+    if (!text) return
+    onRevise(text)
+    setRevision('')
+  }
 
   return (
     <>
@@ -90,6 +101,12 @@ export default function TaskDiffView({
           <button className="btn" onClick={onBack}>
             {t('task.back')}
           </button>
+          {working && (
+            <span className="applied-chip" style={{ color: 'var(--text-2)' }}>
+              <span className="spinner" />
+              {task.steps.length > 0 ? task.steps[task.steps.length - 1] : t('agents.working')}
+            </span>
+          )}
           {task.status === 'needsReview' && (
             <button className="btn primary" onClick={onApprove}>
               {t('task.approve')}
@@ -127,6 +144,40 @@ export default function TaskDiffView({
           <DiffCard key={f.path + '/' + f.name} file={f} />
         ))}
       </div>
+
+      {((task.revisions?.length ?? 0) > 0 || task.status === 'needsReview') && (
+        <div className="revise-bar">
+          {task.revisions?.map((r, i) => (
+            <div key={i} className="revise-item">
+              <span className="revise-num">
+                {t('task.revisionLabel')} {i + 1}
+              </span>
+              <span className="revise-text">{r.instruction}</span>
+            </div>
+          ))}
+          {task.status === 'needsReview' && (
+            <div className="composer slim revise-composer">
+              <input
+                className="composer-input"
+                placeholder={t('task.revisePlaceholder')}
+                value={revision}
+                onChange={(e) => setRevision(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitRevision()}
+              />
+              <span className="composer-actions">
+                <button
+                  className="send-btn"
+                  onClick={submitRevision}
+                  disabled={!revision.trim()}
+                  style={{ opacity: revision.trim() ? 1 : 0.5 }}
+                >
+                  <ArrowUp size={12} />
+                </button>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </>
   )
 }
