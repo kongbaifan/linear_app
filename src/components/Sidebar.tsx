@@ -3,6 +3,7 @@ import type { View } from '../App'
 import { useI18n, type Locale, type MessageKey } from '../i18n'
 import {
   AgentTasks,
+  ChatBubble,
   ChevronDown,
   Compose,
   Inbox,
@@ -184,6 +185,7 @@ export default function Sidebar({
   const isList = view.type === 'list'
   const isReviews = view.type === 'reviews'
   const isInbox = view.type === 'inbox'
+  const isChat = view.type === 'chat'
   const isProjects = view.type === 'projects'
   const isAgents = view.type === 'agents'
 
@@ -211,6 +213,10 @@ export default function Sidebar({
         <button className={`nav-item${isInbox ? ' active' : ''}`} onClick={() => onNavigate({ type: 'inbox' })}>
           <Inbox />
           {t('nav.inbox')}
+        </button>
+        <button className={`nav-item${isChat ? ' active' : ''}`} onClick={() => onNavigate({ type: 'chat' })}>
+          <ChatBubble />
+          {t('nav.chat')}
         </button>
         <button className={`nav-item${isList ? ' active' : ''}`} onClick={() => onNavigate({ type: 'list' })}>
           <MyIssues />

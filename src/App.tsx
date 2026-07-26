@@ -9,13 +9,15 @@ import NewIssueModal from './components/NewIssueModal'
 import AgentTasksView from './components/AgentTasksView'
 import TaskDiffView from './components/TaskDiffView'
 import SettingsView from './components/SettingsView'
+import ChatView from './components/ChatView'
 import { useAgentEngine } from './agent/engine'
+import { chatReply, type ChatTurn } from './agent/provider'
 import type { Issue, StatusKey } from './data/mock'
 import { statusOrder } from './components/meta'
 import { useHashRoute, type View } from './router'
-import { nextIssueId, serializeState, useAppStore, type AgentTask } from './store'
+import { nextIssueId, serializeState, useAppStore, type AgentTask, type ChatMessage } from './store'
 import { applyToGitHub } from './agent/github'
-import { I18nProvider } from './i18n'
+import { I18nProvider, translate } from './i18n'
 
 export type { View }
 
@@ -26,6 +28,7 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<StatusKey>('todo')
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
+  const [chatBusy, setChatBusy] = useState<string[]>([])
   const installPrompt = useRef<any>(null)
 
   useEffect(() => {
@@ -156,6 +159,59 @@ export default function App() {
       )
   }
 
+  // ─── Conversation mode ────────────────────────────────────────
+  const sendChat = (threadId: string | null, text: string) => {
+    const now = Date.now()
+    const userMsg: ChatMessage = { id: `m-${now}`, role: 'user', text, time: now }
+    let id = threadId
+    let turns: ChatTurn[]
+    if (!id) {
+      id = `chat-${now}`
+      dispatch({
+        type: 'newChat',
+        thread: { id, title: text.slice(0, 40), messages: [userMsg], createdAt: now, updatedAt: now },
+      })
+      navigate({ type: 'chat', id })
+      turns = [{ role: 'user', text }]
+    } else {
+      dispatch({ type: 'chatMessage', threadId: id, message: userMsg })
+      const thread = state.chats.find((c) => c.id === id)
+      turns = [...(thread?.messages ?? []), userMsg].map((m) => ({ role: m.role, text: m.text }))
+    }
+    const provider = state.settings.provider
+    const model =
+      (threadId ? state.chats.find((c) => c.id === threadId)?.model : undefined) || provider.model
+    setChatBusy((b) => [...b, id!])
+    chatReply({ ...provider, model }, turns, state.locale)
+      .then((reply) =>
+        dispatch({
+          type: 'chatMessage',
+          threadId: id!,
+          message: {
+            id: `m-${Date.now()}`,
+            role: 'assistant',
+            text: reply,
+            time: Date.now(),
+            model: provider.kind === 'simulated' ? 'simulated' : model,
+          },
+        }),
+      )
+      .catch((e) =>
+        dispatch({
+          type: 'chatMessage',
+          threadId: id!,
+          message: {
+            id: `m-${Date.now()}`,
+            role: 'assistant',
+            text: `${translate(state.locale, 'chat.failed')}: ${e instanceof Error ? e.message : String(e)}`,
+            time: Date.now(),
+            error: true,
+          },
+        }),
+      )
+      .finally(() => setChatBusy((b) => b.filter((x) => x !== id)))
+  }
+
   const toggleTheme = () =>
     dispatch({ type: 'setTheme', theme: state.theme === 'dark' ? 'light' : 'dark' })
 
@@ -265,6 +321,23 @@ export default function App() {
               if (task) approveTask(task)
             }}
             onRetry={(id) => dispatch({ type: 'retryTask', id })}
+            onOpenSettings={() => navigate({ type: 'settings' })}
+          />
+        )}
+        {view.type === 'chat' && (
+          <ChatView
+            chats={state.chats}
+            activeId={view.id}
+            busy={chatBusy}
+            provider={state.settings.provider}
+            onOpen={(id) => navigate({ type: 'chat', id })}
+            onNew={() => navigate({ type: 'chat' })}
+            onSend={sendChat}
+            onDelete={(id) => {
+              dispatch({ type: 'deleteChat', id })
+              if (view.id === id) navigate({ type: 'chat' })
+            }}
+            onSetModel={(threadId, model) => dispatch({ type: 'setChatModel', threadId, model })}
             onOpenSettings={() => navigate({ type: 'settings' })}
           />
         )}

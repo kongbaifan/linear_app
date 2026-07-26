@@ -10,6 +10,7 @@ export type View =
   | { type: 'projects' }
   | { type: 'agents' }
   | { type: 'task'; id: string }
+  | { type: 'chat'; id?: string }
   | { type: 'settings' }
 
 export const DEFAULT_VIEW: View = { type: 'inbox' }
@@ -30,6 +31,8 @@ export function viewToHash(v: View): string {
       return '#/agents'
     case 'task':
       return `#/task/${v.id}`
+    case 'chat':
+      return v.id ? `#/chat/${v.id}` : '#/chat'
     case 'settings':
       return '#/settings'
   }
@@ -54,6 +57,8 @@ export function parseHash(hash: string): View {
       return { type: 'agents' }
     case 'task':
       return b ? { type: 'task', id: b } : { type: 'agents' }
+    case 'chat':
+      return b ? { type: 'chat', id: b } : { type: 'chat' }
     case 'settings':
       return { type: 'settings' }
     default:

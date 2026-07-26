@@ -45,6 +45,17 @@ export const Compose = ({ size = 15 }: P) => (
   </S>
 )
 
+export const ChatBubble = ({ size = 15 }: P) => (
+  <S size={size}>
+    <path
+      d="M8 2.5c3.5 0 6 2.1 6 4.9s-2.5 4.9-6 4.9c-.7 0-1.3-.1-1.9-.2L3.3 13.4l.6-2.5C2.7 10 2 8.8 2 7.4c0-2.8 2.5-4.9 6-4.9Z"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinejoin="round"
+    />
+  </S>
+)
+
 export const Inbox = ({ size = 15 }: P) => (
   <S size={size}>
     <path

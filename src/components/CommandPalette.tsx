@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { View } from '../App'
 import type { Issue } from '../data/mock'
 import { statusMeta } from './meta'
-import { AgentTasks, Board, Compose, Gear, Inbox, Moon, MyIssues, Projects, Reviews, Search, Sun, UIRefresh } from './Icons'
+import { AgentTasks, Board, ChatBubble, Compose, Gear, Inbox, Moon, MyIssues, Projects, Reviews, Search, Sun, UIRefresh } from './Icons'
 import { useI18n } from '../i18n'
 
 interface Item {
@@ -99,6 +99,13 @@ export default function CommandPalette({
         label: t('palette.goInbox'),
         icon: <Inbox size={14} />,
         run: () => onNavigate({ type: 'inbox' }),
+      },
+      {
+        key: 'nav-chat',
+        section: t('palette.navigation'),
+        label: t('palette.goChat'),
+        icon: <ChatBubble size={14} />,
+        run: () => onNavigate({ type: 'chat' }),
       },
       {
         key: 'nav-projects',

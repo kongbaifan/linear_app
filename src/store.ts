@@ -44,6 +44,35 @@ export interface AgentTask {
   finishedAt?: number
 }
 
+// ─── Chat (conversation mode) ───────────────────────────────────
+// Linage has two working postures: task mode (delegate → review) and
+// conversation mode (stay present, back-and-forth). Chat threads are the
+// data atom of the latter.
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+  time: number
+  /** Model that produced an assistant reply ('simulated' in demo mode). */
+  model?: string
+  error?: boolean
+}
+
+export interface ChatThread {
+  id: string
+  title: string
+  messages: ChatMessage[]
+  /** Per-thread model override; falls back to the provider default. */
+  model?: string
+  createdAt: number
+  updatedAt: number
+}
+
+/** Caps keep localStorage and JSON backups from growing without bound. */
+const MAX_CHAT_THREADS = 50
+const MAX_CHAT_MESSAGES = 200
+
 export type ProviderKind = 'simulated' | 'anthropic' | 'openai'
 
 export interface ProviderSettings {
@@ -74,6 +103,7 @@ export interface AppState {
   theme: Theme
   locale: Locale
   agentTasks: AgentTask[]
+  chats: ChatThread[]
   settings: AgentSettings
   codebase: Record<string, string>
 }
@@ -95,6 +125,10 @@ export type Action =
   | { type: 'applyChanges'; id: string }
   | { type: 'githubApplied'; id: string; prUrl: string; branch: string }
   | { type: 'retryTask'; id: string }
+  | { type: 'newChat'; thread: ChatThread }
+  | { type: 'chatMessage'; threadId: string; message: ChatMessage }
+  | { type: 'setChatModel'; threadId: string; model: string }
+  | { type: 'deleteChat'; id: string }
   | { type: 'setSettings'; settings: Partial<Omit<AgentSettings, 'provider'>> }
   | { type: 'setProvider'; provider: Partial<ProviderSettings> }
   | { type: 'importState'; data: unknown }
@@ -111,6 +145,7 @@ function defaultState(): AppState {
     theme: 'dark',
     locale: 'zh',
     agentTasks: [],
+    chats: [],
     settings: {
       provider: { kind: 'simulated', baseUrl: '', apiKey: '', model: '' },
       githubToken: '',
@@ -159,6 +194,11 @@ export function sanitizeState(parsed: any): AppState {
     theme: parsed.theme === 'light' ? 'light' : 'dark',
     locale: parsed.locale === 'en' ? 'en' : 'zh',
     agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
+    chats: Array.isArray(parsed.chats)
+      ? parsed.chats.filter(
+          (c: any) => c && typeof c.id === 'string' && Array.isArray(c.messages),
+        )
+      : [],
     settings: sanitizeSettings(parsed.settings),
     codebase:
       parsed.codebase && typeof parsed.codebase === 'object'
@@ -397,6 +437,33 @@ export function reducer(state: AppState, action: Action): AppState {
         ),
       }
     }
+    case 'newChat':
+      return { ...state, chats: [action.thread, ...state.chats].slice(0, MAX_CHAT_THREADS) }
+    case 'chatMessage':
+      return {
+        ...state,
+        chats: state.chats.map((c) =>
+          c.id === action.threadId
+            ? {
+                ...c,
+                // First user message names the thread.
+                title:
+                  c.title || (action.message.role === 'user' ? action.message.text.slice(0, 40) : c.title),
+                messages: [...c.messages, action.message].slice(-MAX_CHAT_MESSAGES),
+                updatedAt: action.message.time,
+              }
+            : c,
+        ),
+      }
+    case 'setChatModel':
+      return {
+        ...state,
+        chats: state.chats.map((c) =>
+          c.id === action.threadId ? { ...c, model: action.model } : c,
+        ),
+      }
+    case 'deleteChat':
+      return { ...state, chats: state.chats.filter((c) => c.id !== action.id) }
     case 'setSettings':
       return { ...state, settings: { ...state.settings, ...action.settings } }
     case 'setProvider':
@@ -410,7 +477,15 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'importState':
       return sanitizeState(action.data)
     case 'reset':
-      return { ...defaultState(), theme: state.theme, locale: state.locale, settings: state.settings }
+      // Reset clears demo/workspace data but keeps what is truly the
+      // user's: settings, theme, locale — and their conversations.
+      return {
+        ...defaultState(),
+        theme: state.theme,
+        locale: state.locale,
+        settings: state.settings,
+        chats: state.chats,
+      }
     default:
       return state
   }

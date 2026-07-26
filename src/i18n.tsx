@@ -202,6 +202,20 @@ const en = {
   'board.newHere': 'New issue in this column',
   'agents.retry': 'Retry',
   'activity.note': 'Note',
+  'nav.chat': 'Chat',
+  'palette.goChat': 'Go to Chat',
+  'chat.new': 'New chat',
+  'chat.empty.title': 'Start a conversation',
+  'chat.empty.desc': 'Ask questions, think out loud, or shape an idea into a task. Conversations stay in this browser.',
+  'chat.placeholder': 'Message the AI…',
+  'chat.thinking': 'Thinking…',
+  'chat.model': 'Model',
+  'chat.delete': 'Delete chat',
+  'chat.simulatedHint': 'Simulated mode — configure an AI provider in Settings for real replies.',
+  'chat.failed': 'Request failed',
+  'chat.suggest1': 'Turn an idea into a task description',
+  'chat.suggest2': 'What should I prioritize next?',
+  'chat.suggest3': 'Explain what a piece of code does',
 }
 
 export type MessageKey = keyof typeof en
@@ -391,6 +405,20 @@ const zh: Record<MessageKey, string> = {
   'board.newHere': '在此列新建事项',
   'agents.retry': '重试',
   'activity.note': '笔记',
+  'nav.chat': '对话',
+  'palette.goChat': '前往对话',
+  'chat.new': '新对话',
+  'chat.empty.title': '开始一段对话',
+  'chat.empty.desc': '向 AI 提问、梳理思路，或把一个想法聊成任务。对话记录保存在当前浏览器。',
+  'chat.placeholder': '给 AI 发消息…',
+  'chat.thinking': '思考中…',
+  'chat.model': '模型',
+  'chat.delete': '删除对话',
+  'chat.simulatedHint': '当前为模拟模式——在「设置」接入 AI 提供方后，即为真实模型回复。',
+  'chat.failed': '请求失败',
+  'chat.suggest1': '把一个想法整理成任务描述',
+  'chat.suggest2': '下一步该优先做什么？',
+  'chat.suggest3': '解释一段代码的作用',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }

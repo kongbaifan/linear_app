@@ -7,7 +7,7 @@
 // - anthropic: Claude Messages API, custom base URL supported (relays).
 // - openai:    any OpenAI-compatible /chat/completions endpoint —
 //              OpenAI, DeepSeek, Kimi, GLM, Qwen, one-api relay stations, …
-import type { ProviderSettings } from '../store'
+import type { ProviderKind, ProviderSettings } from '../store'
 
 export interface AgentEdit {
   path: string
@@ -259,4 +259,118 @@ export function pickProvider(p: ProviderSettings): AgentProvider {
   if (p.kind === 'anthropic' && p.apiKey) return anthropicProvider
   if (p.kind === 'openai' && p.apiKey) return openaiProvider
   return simulatedProvider
+}
+
+// ─── Plain-text chat (conversation mode) ────────────────────────
+// The agent path above returns structured JSON edits; chat is the other
+// posture — free-form text, you stay present. Same providers, no JSON.
+
+export interface ChatTurn {
+  role: 'user' | 'assistant'
+  text: string
+}
+
+const CHAT_SYSTEM =
+  'You are the assistant inside Linage, a personal AI coding workbench. ' +
+  'Be concise and concrete. Answer in the language the user writes in. ' +
+  'When the user describes work that should become a trackable task, suggest phrasing it as an issue title plus a short description.'
+
+/** Convenient model names for the in-chat picker; the configured model
+ *  always appears first, these are just presets the user can ignore. */
+export const MODEL_PRESETS: Record<ProviderKind, string[]> = {
+  simulated: [],
+  anthropic: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5'],
+  openai: ['gpt-4o-mini', 'gpt-4o', 'deepseek-chat', 'kimi-k2', 'glm-4.6', 'qwen3-max'],
+}
+
+function simulatedReply(turns: ChatTurn[], locale: 'en' | 'zh'): string {
+  const last = turns[turns.length - 1]?.text ?? ''
+  const zh = locale === 'zh'
+  const note = zh
+    ? '\n\n——以上是内置模拟回复。在「设置 → AI 提供方」接入真实模型后，这里就是真正的 AI。'
+    : '\n\n— This is a built-in simulated reply. Connect a real model under Settings → AI provider for actual answers.'
+  if (/你好|您好|hello|^hi\b|嗨|在吗/i.test(last)) {
+    return (
+      (zh
+        ? '你好！我是 Linage 的对话助手。你可以在这里提问、梳理思路，或把一个想法聊成一条可委派的任务。'
+        : "Hi! I'm the Linage chat assistant. Ask questions, think out loud, or shape an idea into a delegatable task here.") + note
+    )
+  }
+  if (/任务|委派|计划|下一步|优先|task|plan|todo|prioriti/i.test(last)) {
+    return (
+      (zh
+        ? '按 Linage 的思路，值得把它拆成可委派的事项：标题写清目标，描述里给出上下文和边界，然后在「我的事项」里新建并委派给 Agent。聊清楚之后动手，比直接堆需求靠谱。'
+        : 'The Linage way: break it into delegatable issues — a goal-shaped title plus a short description with context and boundaries. Create it under My issues and delegate it to the agent.') + note
+    )
+  }
+  if (/代码|报错|函数|接口|code|bug|error|api|函数|正则/i.test(last)) {
+    return (
+      (zh
+        ? '模拟模式下我读不到真实代码，也不会假装读得到。到「设置 → AI 提供方」接入 Anthropic 或任意 OpenAI 兼容端点（含中转站）后，把代码贴进来我就能真正分析。'
+        : "In simulated mode I can't read real code — and won't pretend to. Connect Anthropic or any OpenAI-compatible endpoint (relays included) under Settings → AI provider, then paste the code here.") + note
+    )
+  }
+  const topic = last.slice(0, 24)
+  return (
+    (zh
+      ? `收到，你聊的是「${topic}${last.length > 24 ? '…' : ''}」。模拟模式只能接住话头，给不出真正的见解；配置真实模型后，这里就是一个完整的 AI 对话。`
+      : `Got it — you're talking about "${topic}${last.length > 24 ? '…' : ''}". Simulated mode can hold the thread but not real insight; connect a real model and this becomes a full AI conversation.`) + note
+  )
+}
+
+/** One chat completion over the configured provider. Non-streaming (v1). */
+export async function chatReply(
+  provider: ProviderSettings,
+  turns: ChatTurn[],
+  locale: 'en' | 'zh' = 'zh',
+): Promise<string> {
+  if (provider.kind === 'anthropic' && provider.apiKey) {
+    const base = stripSlash(provider.baseUrl || DEFAULT_ANTHROPIC_BASE)
+    const res = await fetch(`${base}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': provider.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        max_tokens: 2048,
+        system: CHAT_SYSTEM,
+        messages: turns.map((t) => ({ role: t.role, content: t.text })),
+      }),
+    })
+    if (!res.ok) throw new Error(`Anthropic API ${res.status}`)
+    const data = await res.json()
+    const text = (data.content ?? []).map((b: { text?: string }) => b?.text ?? '').join('')
+    if (!text) throw new Error('empty response')
+    return text
+  }
+  if (provider.kind === 'openai' && provider.apiKey) {
+    const base = stripSlash(provider.baseUrl || DEFAULT_OPENAI_BASE)
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${provider.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        max_tokens: 2048,
+        messages: [
+          { role: 'system', content: CHAT_SYSTEM },
+          ...turns.map((t) => ({ role: t.role, content: t.text })),
+        ],
+      }),
+    })
+    if (!res.ok) throw new Error(`OpenAI-compatible API ${res.status}`)
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content ?? ''
+    if (!text) throw new Error('empty response')
+    return text
+  }
+  // Simulated: a small delay so the exchange feels like an exchange.
+  await new Promise((r) => setTimeout(r, 500 + Math.random() * 400))
+  return simulatedReply(turns, locale)
 }
