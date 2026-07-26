@@ -7,7 +7,7 @@ import type { ChatThread, ProviderSettings } from '../store'
 import { MODEL_PRESETS } from '../agent/provider'
 import { Avatar, BotAvatar } from './Avatar'
 import { Dropdown } from './Dropdown'
-import { ArrowUp, ChatBubble, ChevronDown, Compose, StopSquare } from './Icons'
+import { ArrowUp, ChatBubble, ChevronDown, Compose, MyIssues, StopSquare } from './Icons'
 import { useI18n, type MessageKey } from '../i18n'
 
 const SUGGESTS: MessageKey[] = ['chat.suggest1', 'chat.suggest2', 'chat.suggest3']
@@ -22,6 +22,7 @@ export default function ChatView({
   onNew,
   onSend,
   onStop,
+  onToTask,
   onDelete,
   onSetModel,
   onOpenSettings,
@@ -35,6 +36,7 @@ export default function ChatView({
   onNew: () => void
   onSend: (threadId: string | null, text: string) => void
   onStop: (threadId: string) => void
+  onToTask: (thread: ChatThread) => void
   onDelete: (id: string) => void
   onSetModel: (threadId: string, model: string) => void
   onOpenSettings: () => void
@@ -84,6 +86,12 @@ export default function ChatView({
           <span className="panel-title">{t('nav.chat')}</span>
         </div>
         <div className="panel-header-right">
+          {thread && thread.messages.length > 0 && (
+            <button className="btn sm to-task-btn" onClick={() => onToTask(thread)}>
+              <MyIssues size={13} />
+              {t('chat.toTask')}
+            </button>
+          )}
           {thread && provider.kind === 'simulated' && (
             <button className="btn sm" onClick={onOpenSettings}>
               {t('provider.simulated')}

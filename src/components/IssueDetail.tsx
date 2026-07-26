@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import type { ExecutorKey, Issue, PriorityKey, Project, StatusKey } from '../data/mock'
-import type { AgentTask } from '../store'
+import type { AgentTask, ChatThread } from '../store'
 import { Avatar, BotAvatar } from './Avatar'
 import { Dropdown } from './Dropdown'
 import { allLabels, executorOrder, priorityMeta, priorityOrder, statusMeta, statusOrder } from './meta'
 import { useI18n, type MessageKey } from '../i18n'
 import {
   ArrowUp,
+  ChatBubble,
   ChevronDown,
   ChevronUp,
   CopyIcon,
@@ -87,6 +88,8 @@ export default function IssueDetail({
   issue,
   issueTasks,
   projects,
+  sourceChat,
+  onOpenChat,
   onUpdate,
   agentTask,
   onDelegate,
@@ -96,6 +99,9 @@ export default function IssueDetail({
   issue: Issue
   issueTasks: AgentTask[]
   projects: Project[]
+  /** The conversation this issue was created from, if any. */
+  sourceChat?: ChatThread
+  onOpenChat: (id: string) => void
   onUpdate: (patch: Partial<Issue>) => void
   agentTask?: AgentTask
   onDelegate: (issue: Issue) => void
@@ -302,6 +308,18 @@ export default function IssueDetail({
             ]}
             onSelect={(k) => onUpdate({ project: k || undefined })}
           />
+
+          {sourceChat && (
+            <button className="prop-row from-chat" onClick={() => onOpenChat(sourceChat.id)}>
+              <span style={{ color: 'var(--text-3)', display: 'inline-flex' }}>
+                <ChatBubble size={14} />
+              </span>
+              <span className="from-chat-label">
+                {t('issue.fromChat')}
+                <span className="from-chat-title">{sourceChat.title}</span>
+              </span>
+            </button>
+          )}
 
           <div className="prop-label">Agent</div>
           {!agentTask && (

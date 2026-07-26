@@ -17,6 +17,8 @@ export interface Issue {
   notes?: IssueNote[]
   createdAt: number
   sample?: boolean
+  /** Conversation this issue was created from (chat → task bridge). */
+  chatId?: string
 }
 
 export interface IssueNote {

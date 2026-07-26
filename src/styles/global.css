@@ -2854,3 +2854,28 @@ body,
     opacity: 0;
   }
 }
+
+/* chat → task bridge */
+.prop-row.from-chat {
+  margin-top: var(--s2);
+}
+
+.from-chat-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+.from-chat-title {
+  color: var(--text-3);
+  font-size: var(--fz-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.prop-row.from-chat:hover .from-chat-title {
+  color: var(--text-2);
+}

@@ -84,6 +84,7 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
           issueId: task.issueId,
           title: task.title,
           description: task.description,
+          conversation: task.context,
           provider: state.settings.provider,
           codebase,
         }

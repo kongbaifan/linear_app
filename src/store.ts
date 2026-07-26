@@ -32,6 +32,8 @@ export interface AgentTask {
   description?: string
   status: AgentTaskStatus
   model: string
+  /** Conversation transcript frozen at delegation time (chat → task). */
+  context?: string
   steps: string[]
   summary?: string
   changes?: FileChange[]

@@ -19,6 +19,8 @@ export interface AgentRunInput {
   issueId: string
   title: string
   description?: string
+  /** Prior chat transcript when the issue came from a conversation. */
+  conversation?: string
   provider: ProviderSettings
   codebase: Record<string, string>
 }
@@ -40,7 +42,10 @@ function buildPrompt(input: AgentRunInput): string {
     .map(([path, content]) => `--- ${path} ---\n${content}`)
     .join('\n\n')
   const details = input.description ? `\nDetails: ${input.description}` : ''
-  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}
+  const discussion = input.conversation
+    ? `\n\nThis issue came out of a conversation with the user. Prior discussion (context — honor decisions made here):\n${input.conversation}`
+    : ''
+  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".${details}${discussion}
 
 Here is the codebase:
 

@@ -15,11 +15,20 @@ import { chatReply, type ChatTurn } from './agent/provider'
 import type { Issue, StatusKey } from './data/mock'
 import { statusOrder } from './components/meta'
 import { useHashRoute, type View } from './router'
-import { nextIssueId, serializeState, useAppStore, type AgentTask, type ChatMessage } from './store'
+import { nextIssueId, serializeState, useAppStore, type AgentTask, type ChatMessage, type ChatThread } from './store'
 import { applyToGitHub } from './agent/github'
 import { I18nProvider, translate } from './i18n'
 
 export type { View }
+
+/** Chat transcript for the agent prompt, frozen at delegation time. */
+function chatTranscript(thread: ChatThread, cap = 4000): string {
+  const text = thread.messages
+    .filter((m) => !m.error)
+    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
+    .join('\n')
+  return text.length > cap ? `…${text.slice(-cap)}` : text
+}
 
 export default function App() {
   const { state, dispatch } = useAppStore()
@@ -27,6 +36,11 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<StatusKey>('todo')
+  const [modalPrefill, setModalPrefill] = useState<{
+    title?: string
+    description?: string
+    chatId?: string
+  } | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(state.issues[0]?.id ?? null)
   const [chatBusy, setChatBusy] = useState<string[]>([])
   const [chatStream, setChatStream] = useState<{ threadId: string; text: string } | null>(null)
@@ -56,9 +70,27 @@ export default function App() {
   const addIssue = (partial: Omit<Issue, 'id' | 'createdAt'>) => {
     const issue: Issue = { ...partial, id: nextIssueId(allIssues), createdAt: Date.now() }
     dispatch({ type: 'addIssue', issue })
-    // Stay in the current list mode (board keeps its context).
-    navigate({ type: 'list', board: view.type === 'list' ? view.board : false })
+    if (issue.chatId) {
+      // Chat → task bridge: land on the new issue so delegating is one
+      // click away, completing the "shape it, then hand it off" flow.
+      navigate({ type: 'issue', id: issue.id })
+    } else {
+      // Stay in the current list mode (board keeps its context).
+      navigate({ type: 'list', board: view.type === 'list' ? view.board : false })
+    }
     setSelectedId(issue.id)
+  }
+
+  // Chat → task: prefill the new-issue modal from a conversation.
+  const chatToTask = (thread: ChatThread) => {
+    const lastUser = [...thread.messages].reverse().find((m) => m.role === 'user')?.text ?? ''
+    setModalPrefill({
+      title: thread.title || lastUser.slice(0, 40),
+      description: lastUser && lastUser !== thread.title ? lastUser : undefined,
+      chatId: thread.id,
+    })
+    setModalStatus('todo')
+    setModalOpen(true)
   }
 
   // ─── Global keyboard shortcuts ────────────────────────────────
@@ -118,6 +150,7 @@ export default function App() {
   const githubMode = !!(state.settings.githubToken && state.settings.githubRepo)
 
   const delegateIssue = (issue: Issue) => {
+    const srcChat = issue.chatId ? state.chats.find((c) => c.id === issue.chatId) : undefined
     dispatch({
       type: 'delegate',
       task: {
@@ -125,6 +158,7 @@ export default function App() {
         issueId: issue.id,
         title: issue.title,
         description: issue.description,
+        context: srcChat ? chatTranscript(srcChat) : undefined,
         status: 'queued',
         model: state.settings.provider.kind === 'simulated' ? 'simulated' : state.settings.provider.model,
         steps: [],
@@ -280,6 +314,8 @@ export default function App() {
               issue={issue}
               issueTasks={state.agentTasks.filter((a) => a.issueId === issue.id)}
               projects={state.projects}
+              sourceChat={issue.chatId ? state.chats.find((c) => c.id === issue.chatId) : undefined}
+              onOpenChat={(id) => navigate({ type: 'chat', id })}
               onUpdate={(patch) => dispatch({ type: 'updateIssue', id: issue.id, patch })}
               agentTask={state.agentTasks.find(
                 (a) => a.issueId === issue.id && a.status !== 'done' && a.status !== 'failed',
@@ -350,6 +386,7 @@ export default function App() {
             onNew={() => navigate({ type: 'chat' })}
             onSend={sendChat}
             onStop={stopChat}
+            onToTask={chatToTask}
             onDelete={(id) => {
               dispatch({ type: 'deleteChat', id })
               if (view.id === id) navigate({ type: 'chat' })
@@ -436,8 +473,16 @@ export default function App() {
         <NewIssueModal
           projects={state.projects}
           initialStatus={modalStatus}
-          onClose={() => setModalOpen(false)}
-          onCreate={(p) => { addIssue(p); setModalOpen(false) }}
+          prefill={modalPrefill ?? undefined}
+          onClose={() => {
+            setModalOpen(false)
+            setModalPrefill(null)
+          }}
+          onCreate={(p) => {
+            addIssue(p)
+            setModalOpen(false)
+            setModalPrefill(null)
+          }}
         />
       )}
 
