@@ -7,6 +7,7 @@ import type { ChatThread, ProviderSettings } from '../store'
 import { MODEL_PRESETS } from '../agent/provider'
 import { Avatar, BotAvatar } from './Avatar'
 import { Dropdown } from './Dropdown'
+import Markdown from './Markdown'
 import { ArrowUp, ChatBubble, ChevronDown, Compose, MyIssues, StopSquare } from './Icons'
 import { useI18n, type MessageKey } from '../i18n'
 
@@ -184,7 +185,13 @@ export default function ChatView({
                       {m.model && <span className="model-badge">{m.model}</span>}
                       <span className="chat-msg-time">{fmtTime(m.time)}</span>
                     </div>
-                    <div className="chat-msg-body">{m.text}</div>
+                    {m.role === 'assistant' && !m.error ? (
+                      <div className="chat-msg-body md">
+                        <Markdown text={m.text} />
+                      </div>
+                    ) : (
+                      <div className="chat-msg-body">{m.text}</div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -199,8 +206,8 @@ export default function ChatView({
                         <div className="chat-msg-meta">
                           <span className="chat-msg-name">Linage</span>
                         </div>
-                        <div className="chat-msg-body streaming">
-                          {liveText}
+                        <div className="chat-msg-body streaming md">
+                          <Markdown text={liveText} />
                           <span className="stream-cursor" />
                         </div>
                       </>
