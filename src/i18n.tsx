@@ -128,6 +128,9 @@ const en = {
   'agents.delegate': 'Delegate to Agent',
   'agents.working': 'Agent working…',
   'palette.goAgents': 'Go to Agent tasks',
+  'task.approve': 'Approve & apply',
+  'task.applied': 'Applied',
+  'task.back': 'Back',
 }
 
 export type MessageKey = keyof typeof en
@@ -243,6 +246,9 @@ const zh: Record<MessageKey, string> = {
   'agents.delegate': '委派给 Agent',
   'agents.working': 'Agent 工作中…',
   'palette.goAgents': '前往 Agent 任务',
+  'task.approve': '批准并应用',
+  'task.applied': '已应用',
+  'task.back': '返回',
 }
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, zh }

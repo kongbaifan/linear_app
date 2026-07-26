@@ -9,6 +9,7 @@ import CommandPalette from './components/CommandPalette'
 import NewIssueModal from './components/NewIssueModal'
 import { FloatingAgentPanel } from './components/AgentPanel'
 import AgentTasksView from './components/AgentTasksView'
+import TaskDiffView from './components/TaskDiffView'
 import SettingsModal from './components/SettingsModal'
 import { useAgentEngine } from './agent/engine'
 import type { Issue } from './data/mock'
@@ -151,6 +152,7 @@ export default function App() {
             )}
             onDelegate={delegateIssue}
             onViewAgent={() => navigate({ type: 'agents' })}
+            onReviewTask={(taskId) => navigate({ type: 'task', id: taskId })}
           />
         )}
         {view.type === 'diff' && <DiffView onBack={() => navigate({ type: 'list' })} />}
@@ -167,11 +169,23 @@ export default function App() {
           <AgentTasksView
             tasks={state.agentTasks}
             onOpenIssue={openIssue}
-            onOpenDiff={() => navigate({ type: 'diff', id: 'ENG-2498' })}
-            onApprove={(id) => dispatch({ type: 'agentStatus', id, status: 'done' })}
+            onOpenTask={(id) => navigate({ type: 'task', id })}
+            onApprove={(id) => dispatch({ type: 'applyChanges', id })}
             onOpenSettings={() => setSettingsOpen(true)}
           />
         )}
+        {view.type === 'task' && (() => {
+          const task = state.agentTasks.find((a) => a.id === view.id)
+          if (!task) return <div className="agents-empty">Task not found</div>
+          return (
+            <TaskDiffView
+              task={task}
+              onBack={() => navigate({ type: 'agents' })}
+              onApprove={() => dispatch({ type: 'applyChanges', id: task.id })}
+              onOpenIssue={openIssue}
+            />
+          )
+        })()}
       </main>
 
       {view.type === 'issue' && view.id === 'ENG-2703' && (

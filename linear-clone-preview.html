@@ -2226,6 +2226,30 @@ body, .main, .sidebar, .agent-panel, .menu, .palette, .modal {
   margin-top: 5px;
   font-size: 11.5px;
 }
+
+.task-summary-line {
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 640px;
+  font-size: 12.5px;
+}
+
+.diff-line.gap .code {
+  color: var(--text-3);
+  user-select: none;
+}
+
+.applied-chip {
+  display: inline-flex;
+  color: var(--green);
+  align-items:  center;
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 12.5px;
+  font-weight: 550;
+}
 </style></head><body><div id="root"></div><script type="module">var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
@@ -19343,11 +19367,11 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
 });
 
 // src/main.tsx
-var import_react15 = __toESM(require_react(), 1);
+var import_react16 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
 // src/App.tsx
-var import_react14 = __toESM(require_react(), 1);
+var import_react15 = __toESM(require_react(), 1);
 
 // src/i18n.tsx
 var import_react = __toESM(require_react(), 1);
@@ -19452,7 +19476,10 @@ var en = {
   "agents.save": "Save",
   "agents.delegate": "Delegate to Agent",
   "agents.working": "Agent working…",
-  "palette.goAgents": "Go to Agent tasks"
+  "palette.goAgents": "Go to Agent tasks",
+  "task.approve": "Approve & apply",
+  "task.applied": "Applied",
+  "task.back": "Back"
 };
 var zh = {
   "nav.inbox": "收件箱",
@@ -19554,7 +19581,10 @@ var zh = {
   "agents.save": "保存",
   "agents.delegate": "委派给 Agent",
   "agents.working": "Agent 工作中…",
-  "palette.goAgents": "前往 Agent 任务"
+  "palette.goAgents": "前往 Agent 任务",
+  "task.approve": "批准并应用",
+  "task.applied": "已应用",
+  "task.back": "返回"
 };
 var dictionaries = { en, zh };
 function translate(locale, key) {
@@ -21577,7 +21607,8 @@ function IssueDetail({
   onUpdate,
   agentTask,
   onDelegate,
-  onViewAgent
+  onViewAgent,
+  onReviewTask
 }) {
   const { t } = useI18n();
   return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(jsx_dev_runtime9.Fragment, {
@@ -21830,7 +21861,7 @@ function IssueDetail({
               }, undefined, true, undefined, this),
               agentTask && agentTask.status === "needsReview" && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
                 className: "btn sm delegate-btn review",
-                onClick: () => onOpenDiff("ENG-2498"),
+                onClick: () => onReviewTask(agentTask.id),
                 children: [
                   /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinageLogo, {
                     size: 11
@@ -23285,7 +23316,7 @@ function elapsed(t) {
 function AgentTasksView({
   tasks,
   onOpenIssue,
-  onOpenDiff,
+  onOpenTask,
   onApprove,
   onOpenSettings
 }) {
@@ -23376,7 +23407,7 @@ function AgentTasksView({
                           className: "btn sm",
                           onClick: (e) => {
                             e.stopPropagation();
-                            onOpenDiff();
+                            onOpenTask(task.id);
                           },
                           children: [
                             /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Eye, {
@@ -23429,9 +23460,283 @@ function AgentTasksView({
   }, undefined, true, undefined, this);
 }
 
-// src/components/SettingsModal.tsx
+// src/components/TaskDiffView.tsx
 var import_react10 = __toESM(require_react(), 1);
+
+// src/agent/diff.ts
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function diffOps(before, after) {
+  const n = before.length;
+  const m = after.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i2 = n - 1;i2 >= 0; i2--) {
+    for (let j2 = m - 1;j2 >= 0; j2--) {
+      dp[i2][j2] = before[i2] === after[j2] ? dp[i2 + 1][j2 + 1] + 1 : Math.max(dp[i2 + 1][j2], dp[i2][j2 + 1]);
+    }
+  }
+  const ops = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (before[i] === after[j]) {
+      ops.push({ type: "same", text: before[i] });
+      i++;
+      j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      ops.push({ type: "del", text: before[i] });
+      i++;
+    } else {
+      ops.push({ type: "add", text: after[j] });
+      j++;
+    }
+  }
+  while (i < n)
+    ops.push({ type: "del", text: before[i++] });
+  while (j < m)
+    ops.push({ type: "add", text: after[j++] });
+  return ops;
+}
+var CONTEXT = 3;
+function renderDiff(path, before, after) {
+  const ops = diffOps(before.split(`
+`), after.split(`
+`));
+  const keep = new Array(ops.length).fill(false);
+  ops.forEach((op, idx) => {
+    if (op.type !== "same") {
+      for (let k = Math.max(0, idx - CONTEXT);k <= Math.min(ops.length - 1, idx + CONTEXT); k++) {
+        keep[k] = true;
+      }
+    }
+  });
+  const lines = [];
+  let added = 0;
+  let removed = 0;
+  let newNo = 0;
+  let inGap = false;
+  ops.forEach((op, idx) => {
+    if (op.type !== "del")
+      newNo++;
+    if (!keep[idx]) {
+      if (!inGap && lines.length > 0) {
+        lines.push({ kind: "gap", no: null, html: "⋯" });
+        inGap = true;
+      }
+      return;
+    }
+    inGap = false;
+    if (op.type === "same") {
+      lines.push({ kind: "context", no: newNo, html: escapeHtml(op.text) || " " });
+    } else if (op.type === "add") {
+      added++;
+      lines.push({ kind: "add", no: newNo, html: escapeHtml(op.text) || " " });
+    } else {
+      removed++;
+      lines.push({ kind: "del", no: null, html: escapeHtml(op.text) || " " });
+    }
+  });
+  const parts = path.split("/");
+  return {
+    name: parts[parts.length - 1],
+    path: parts.slice(0, -1).join("/"),
+    added,
+    removed,
+    lines
+  };
+}
+
+// src/components/TaskDiffView.tsx
 var jsx_dev_runtime17 = __toESM(require_jsx_dev_runtime(), 1);
+function DiffCard({ file }) {
+  return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+    className: "diff-file",
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "diff-file-header",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+            className: "file-icon",
+            children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(FileIcon, {
+              size: 13
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+            className: "diff-file-name",
+            children: file.name
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+            className: "diff-file-path",
+            children: file.path
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+            className: "diff-file-stats",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "diff-stat-add",
+                children: [
+                  "+",
+                  file.added
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "diff-stat-del",
+                children: [
+                  "-",
+                  file.removed
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "diff-code",
+        children: file.lines.map((line, i) => line.kind === "gap" ? /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: "diff-line gap",
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "gutter"
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "sign"
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "code",
+              children: "⋯"
+            }, undefined, false, undefined, this)
+          ]
+        }, i, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: `diff-line ${line.kind === "add" ? "add" : line.kind === "del" ? "del" : ""}`,
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "gutter",
+              children: line.no ?? ""
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "sign",
+              children: line.kind === "add" ? "+" : line.kind === "del" ? "-" : " "
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "code",
+              dangerouslySetInnerHTML: { __html: line.html }
+            }, undefined, false, undefined, this)
+          ]
+        }, i, true, undefined, this))
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+function TaskDiffView({
+  task,
+  onBack,
+  onApprove,
+  onOpenIssue
+}) {
+  const { t } = useI18n();
+  const files = import_react10.useMemo(() => (task.changes ?? []).map((c) => renderDiff(c.path, c.before, c.after)), [task.changes]);
+  const added = files.reduce((n, f) => n + f.added, 0);
+  const removed = files.reduce((n, f) => n + f.removed, 0);
+  return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(jsx_dev_runtime17.Fragment, {
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("header", {
+        className: "diff-header",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+            className: "diff-header-left",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(BotAvatar, {
+                size: "sm"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                className: "issue-ref",
+                onClick: () => onOpenIssue(task.issueId),
+                children: task.issueId
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "crumb-sep",
+                children: "›"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "branch-name",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(GitBranch, {
+                    size: 13
+                  }, undefined, false, undefined, this),
+                  task.title
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "diff-stat-add",
+                children: [
+                  "+",
+                  added
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "diff-stat-del",
+                children: [
+                  "-",
+                  removed
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+            className: "panel-header-right",
+            children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+              className: "model-badge",
+              children: task.model
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "diff-toolbar",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+            className: "task-summary-line",
+            children: task.summary
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+            className: "diff-actions",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                className: "btn",
+                onClick: onBack,
+                children: t("task.back")
+              }, undefined, false, undefined, this),
+              task.status === "needsReview" ? /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                className: "btn primary",
+                onClick: onApprove,
+                children: t("task.approve")
+              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                className: "applied-chip",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(StatusDone, {
+                    size: 13
+                  }, undefined, false, undefined, this),
+                  t("task.applied")
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "diff-body",
+        children: files.map((f) => /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(DiffCard, {
+          file: f
+        }, f.path + "/" + f.name, false, undefined, this))
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/SettingsModal.tsx
+var import_react11 = __toESM(require_react(), 1);
+var jsx_dev_runtime18 = __toESM(require_jsx_dev_runtime(), 1);
 var MODEL_OPTIONS = ["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"];
 function SettingsModal({
   settings,
@@ -23439,64 +23744,64 @@ function SettingsModal({
   onClose
 }) {
   const { t } = useI18n();
-  const [apiKey, setApiKey] = import_react10.useState(settings.apiKey);
-  const [model, setModel] = import_react10.useState(settings.model);
-  import_react10.useEffect(() => {
+  const [apiKey, setApiKey] = import_react11.useState(settings.apiKey);
+  const [model, setModel] = import_react11.useState(settings.model);
+  import_react11.useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-  return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+  return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
     className: "overlay",
     onMouseDown: (e) => e.target === e.currentTarget && onClose(),
-    children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+    children: /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
       className: "modal",
       style: { width: 480 },
       children: [
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
           className: "modal-breadcrumb",
           children: t("agents.settings")
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
           className: "settings-label",
           children: t("agents.apiKey")
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
           className: "settings-input",
           type: "password",
           placeholder: "sk-ant-…",
           value: apiKey,
           onChange: (e) => setApiKey(e.target.value)
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
           className: "settings-hint",
           children: t("agents.apiKeyHint")
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
           className: "settings-label",
           children: t("agents.model")
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
           className: "settings-input",
           list: "model-options",
           value: model,
           onChange: (e) => setModel(e.target.value)
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("datalist", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("datalist", {
           id: "model-options",
-          children: MODEL_OPTIONS.map((m) => /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("option", {
+          children: MODEL_OPTIONS.map((m) => /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("option", {
             value: m
           }, m, false, undefined, this))
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
           className: "modal-footer",
           children: [
-            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
               className: "btn",
               onClick: onClose,
               children: t("modal.cancel")
             }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+            /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
               className: "btn primary",
               onClick: () => {
                 onSave({ apiKey: apiKey.trim(), model: model.trim() || settings.model });
@@ -23512,7 +23817,7 @@ function SettingsModal({
 }
 
 // src/agent/engine.ts
-var import_react11 = __toESM(require_react(), 1);
+var import_react12 = __toESM(require_react(), 1);
 
 // src/agent/provider.ts
 var playbooks = [
@@ -23523,40 +23828,102 @@ var playbooks = [
       "Traced vehicle_state sync in RideStore",
       "Identified blocking full-refresh call",
       "Rendered UI at minimum-required-state checkpoint",
-      "Pushed branch and opened draft PR"
+      "Verified cold-start path locally"
     ],
-    summary: "Startup no longer blocks on full vehicle_state refresh; UI renders once minimum state is present. Draft PR ready for review."
+    summary: "Startup no longer blocks on the full vehicle_state refresh; the UI renders once minimum required state is present and the full sync continues in the background.",
+    edits: [
+      {
+        path: "client/src/startup/AppBoot.swift",
+        find: `        // Block until the full vehicle_state payload has been refreshed.
+        store.refreshVehicleState(mode: .full)
+        store.waitUntilSynced()
+
+        window.rootViewController = HomeViewController(store: store)`,
+        replace: `        // Render as soon as minimum required state is present;
+        // finish the full vehicle_state refresh in the background.
+        store.refreshVehicleState(mode: .minimum)
+
+        window.rootViewController = HomeViewController(store: store)
+        Task.detached(priority: .utility) {
+            store.refreshVehicleState(mode: .full)
+        }`
+      }
+    ]
   },
   {
-    match: /bug|blank|crash|fix|overlap|keyboard/i,
+    match: /dim|status card|opacity/i,
+    steps: [
+      "Read client/src/views/RideHistory",
+      "Removed dimmed-row styling from ride cards",
+      "Surfaced waiting status through the byline",
+      "Re-ran visual snapshots"
+    ],
+    summary: "Ride cards no longer dim; waiting rides read their status from waitingStatusById via the card byline.",
+    edits: [
+      {
+        path: "client/src/views/RideHistory/RideHistoryPage.tsx",
+        find: `  box-shadow: none;
+  opacity: 1;`,
+        replace: `  box-shadow: none;`
+      }
+    ]
+  },
+  {
+    match: /bug|blank|crash|fix|overlap|keyboard|receipt/i,
     steps: [
       "Reproduced the issue locally",
-      "Bisected to the offending commit",
+      "Bisected to the offending code path",
       "Wrote a failing regression test",
-      "Applied a minimal fix and re-ran the suite",
-      "Pushed branch and opened draft PR"
+      "Applied a minimal guard and re-ran the suite"
     ],
-    summary: "Root cause isolated and fixed with a regression test guarding it. Draft PR ready for review."
+    summary: "Root cause isolated and guarded with an early return; a regression test now covers the empty-section path.",
+    edits: [
+      {
+        path: "client/src/views/RideHistory/useRideHistory.ts",
+        find: `  const sections: RideSection[] = useComputed(() => [
+    { title: 'Active', rideIds: [...waitingStatusById.keys()] },
+    { title: 'Past', rideIds: completedRides.map((r) => r.id) },
+  ])`,
+        replace: `  const sections: RideSection[] = useComputed(() =>
+    [
+      { title: 'Active', rideIds: [...waitingStatusById.keys()] },
+      { title: 'Past', rideIds: completedRides.map((r) => r.id) },
+    ].filter((section) => section.rideIds.length > 0),
+  )`
+      }
+    ]
   }
 ];
 var defaultPlaybook = {
+  match: /./,
   steps: [
     "Read the issue and related code paths",
     "Sketched an implementation plan",
     "Applied changes across affected files",
-    "Ran build and existing tests",
-    "Pushed branch and opened draft PR"
+    "Ran build and existing tests"
   ],
-  summary: "Implemented the requested change and opened a draft PR for review."
+  summary: "Implemented the requested change; see the diff for details.",
+  edits: [
+    {
+      path: "client/src/views/RideHistory/useRideHistory.ts",
+      find: `// Build sections from ride history state`,
+      replace: `// Build sections from ride history state
+// NOTE: keep sections stable-sorted; ordering is part of the public contract.`
+    }
+  ]
 };
 var simulatedProvider = {
   async run(input) {
     const pb = playbooks.find((p) => p.match.test(input.title)) ?? defaultPlaybook;
-    return { steps: pb.steps, summary: pb.summary };
+    return { steps: pb.steps, summary: pb.summary, edits: pb.edits };
   }
 };
 var anthropicProvider = {
   async run(input) {
+    const files = Object.entries(input.codebase).map(([path, content]) => `--- ${path} ---
+${content}`).join(`
+
+`);
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -23567,12 +23934,23 @@ var anthropicProvider = {
       },
       body: JSON.stringify({
         model: input.model,
-        max_tokens: 512,
+        max_tokens: 2048,
         messages: [
           {
             role: "user",
-            content: `You are a coding agent working on issue ${input.issueId}: "${input.title}".
-Respond with ONLY a JSON object, no prose: {"steps": [4-6 short past-tense work log lines], "summary": "1-2 sentence result summary ending with the PR being ready for review"}`
+            content: `You are a coding agent. Issue ${input.issueId}: "${input.title}".
+
+Here is the codebase:
+
+${files}
+
+Make a focused change that addresses the issue. Respond with ONLY a JSON object:
+{
+  "steps": [4-6 short past-tense work-log lines],
+  "summary": "1-2 sentence result summary",
+  "edits": [{"path": "<exact file path>", "find": "<exact text copied verbatim from the file>", "replace": "<replacement text>"}]
+}
+Rules: "find" must be an EXACT substring of the file at "path" (copy it character-for-character, including indentation). Keep edits minimal. 1-3 edits max.`
           }
         ]
       })
@@ -23582,10 +23960,13 @@ Respond with ONLY a JSON object, no prose: {"steps": [4-6 short past-tense work 
     const data = await res.json();
     const text = data.content?.[0]?.text ?? "";
     const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-    if (!Array.isArray(parsed.steps) || typeof parsed.summary !== "string") {
+    if (!Array.isArray(parsed.steps) || typeof parsed.summary !== "string" || !Array.isArray(parsed.edits)) {
       throw new Error("bad response shape");
     }
-    return { steps: parsed.steps.map(String), summary: parsed.summary };
+    const edits = parsed.edits.filter((e) => e && typeof e.path === "string" && typeof e.find === "string").map((e) => ({ path: e.path, find: e.find, replace: String(e.replace ?? "") }));
+    if (edits.length === 0)
+      throw new Error("no valid edits");
+    return { steps: parsed.steps.map(String), summary: parsed.summary, edits };
   }
 };
 function pickProvider(apiKey) {
@@ -23594,31 +23975,55 @@ function pickProvider(apiKey) {
 
 // src/agent/engine.ts
 var STEP_DELAY_MS = 1300;
+function resolveEdits(codebase, edits, taskId) {
+  const after = {};
+  for (const edit of edits) {
+    const current = after[edit.path] ?? codebase[edit.path];
+    if (current === undefined)
+      continue;
+    if (current.includes(edit.find)) {
+      after[edit.path] = current.replace(edit.find, edit.replace);
+    }
+  }
+  const changes = Object.entries(after).filter(([path, next]) => next !== codebase[path]).map(([path, next]) => ({ path, before: codebase[path], after: next }));
+  if (changes.length === 0) {
+    const path = Object.keys(codebase)[0];
+    return [
+      {
+        path,
+        before: codebase[path],
+        after: codebase[path] + `
+// TODO(${taskId}): edits did not apply cleanly; needs manual follow-up
+`
+      }
+    ];
+  }
+  return changes;
+}
 function useAgentEngine(state, dispatch) {
-  const running = import_react11.useRef(new Set);
-  import_react11.useEffect(() => {
+  const running = import_react12.useRef(new Set);
+  import_react12.useEffect(() => {
     state.agentTasks.filter((t) => t.status === "working" && !running.current.has(t.id)).forEach((t) => dispatch({ type: "agentStatus", id: t.id, status: "queued" }));
   }, []);
-  import_react11.useEffect(() => {
+  import_react12.useEffect(() => {
     const queued = state.agentTasks.filter((t) => t.status === "queued" && !running.current.has(t.id));
     queued.forEach((task) => {
       running.current.add(task.id);
       dispatch({ type: "agentStatus", id: task.id, status: "working" });
+      const codebase = { ...state.codebase };
       (async () => {
+        const input = {
+          issueId: task.issueId,
+          title: task.title,
+          model: state.settings.model,
+          apiKey: state.settings.apiKey || undefined,
+          codebase
+        };
         let result;
         try {
-          result = await pickProvider(state.settings.apiKey || undefined).run({
-            issueId: task.issueId,
-            title: task.title,
-            model: state.settings.model,
-            apiKey: state.settings.apiKey || undefined
-          });
+          result = await pickProvider(state.settings.apiKey || undefined).run(input);
         } catch {
-          result = await simulatedProvider.run({
-            issueId: task.issueId,
-            title: task.title,
-            model: state.settings.model
-          });
+          result = await simulatedProvider.run(input);
         }
         for (const step of result.steps) {
           await new Promise((r) => setTimeout(r, STEP_DELAY_MS));
@@ -23626,19 +24031,19 @@ function useAgentEngine(state, dispatch) {
         }
         await new Promise((r) => setTimeout(r, 600));
         dispatch({
-          type: "agentStatus",
+          type: "agentResult",
           id: task.id,
-          status: "needsReview",
-          summary: result.summary
+          summary: result.summary,
+          changes: resolveEdits(codebase, result.edits, task.id)
         });
         running.current.delete(task.id);
       })();
     });
-  }, [state.agentTasks, state.settings, dispatch]);
+  }, [state.agentTasks, state.settings, state.codebase, dispatch]);
 }
 
 // src/router.ts
-var import_react12 = __toESM(require_react(), 1);
+var import_react13 = __toESM(require_react(), 1);
 var DEFAULT_VIEW = { type: "issue", id: "ENG-2703" };
 function viewToHash(v) {
   switch (v.type) {
@@ -23654,6 +24059,8 @@ function viewToHash(v) {
       return "#/projects";
     case "agents":
       return "#/agents";
+    case "task":
+      return `#/task/${v.id}`;
   }
 }
 function parseHash(hash) {
@@ -23672,18 +24079,20 @@ function parseHash(hash) {
       return { type: "projects" };
     case "agents":
       return { type: "agents" };
+    case "task":
+      return b ? { type: "task", id: b } : { type: "agents" };
     default:
       return DEFAULT_VIEW;
   }
 }
 function useHashRoute() {
-  const [view, setViewState] = import_react12.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
-  import_react12.useEffect(() => {
+  const [view, setViewState] = import_react13.useState(() => window.location.hash ? parseHash(window.location.hash) : DEFAULT_VIEW);
+  import_react13.useEffect(() => {
     const onHash = () => setViewState(parseHash(window.location.hash));
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const navigate = import_react12.useCallback((v) => {
+  const navigate = import_react13.useCallback((v) => {
     const hash = viewToHash(v);
     if (window.location.hash === hash) {
       setViewState(v);
@@ -23695,7 +24104,95 @@ function useHashRoute() {
 }
 
 // src/store.ts
-var import_react13 = __toESM(require_react(), 1);
+var import_react14 = __toESM(require_react(), 1);
+
+// src/data/codebase.ts
+var initialCodebase = {
+  "client/src/views/RideHistory/useRideHistory.ts": `import { useComputed } from '@ride/reactive'
+import { ridesAwaitingPickup, ridesInProgress, completedRides } from './rideStore'
+
+export interface RideSection {
+  title: string
+  rideIds: string[]
+}
+
+// Build sections from ride history state
+export function useRideHistory() {
+  const waitingStatusById: Map<string, string> = useComputed(() => {
+    const map = new Map<string, string>()
+    for (const ride of ridesAwaitingPickup) {
+      map.set(ride.id, 'Driver en route')
+    }
+    for (const ride of ridesInProgress) {
+      map.set(ride.id, 'Trip in progress')
+    }
+    return map
+  })
+
+  const sections: RideSection[] = useComputed(() => [
+    { title: 'Active', rideIds: [...waitingStatusById.keys()] },
+    { title: 'Past', rideIds: completedRides.map((r) => r.id) },
+  ])
+
+  return { sections, waitingStatusById }
+}
+`,
+  "client/src/views/RideHistory/RideHistoryPage.tsx": `import styled from 'styled-components'
+import { useRideHistory } from './useRideHistory'
+import { RideCard } from './RideCard'
+
+const Card = styled.div\`
+  border-radius: 10px;
+  padding: 14px 16px;
+  background-color: \${(props) => props.theme.color.bgBase};
+  box-shadow: none;
+  opacity: 1;
+\`
+
+export function RideHistoryPage() {
+  const { sections, waitingStatusById } = useRideHistory()
+
+  return (
+    <main>
+      {sections.map((section) => (
+        <section key={section.title}>
+          <h2>{section.title}</h2>
+          {section.rideIds.map((id) => (
+            <Card key={id}>
+              <RideCard rideId={id} byline={waitingStatusById.get(id)} />
+            </Card>
+          ))}
+        </section>
+      ))}
+    </main>
+  )
+}
+`,
+  "client/src/startup/AppBoot.swift": `import UIKit
+
+final class AppBoot {
+    static let shared = AppBoot()
+
+    func launch(window: UIWindow) {
+        let store = RideStore.shared
+
+        // Block until the full vehicle_state payload has been refreshed.
+        store.refreshVehicleState(mode: .full)
+        store.waitUntilSynced()
+
+        window.rootViewController = HomeViewController(store: store)
+        window.makeKeyAndVisible()
+    }
+
+    func warmCaches() {
+        MapTileCache.shared.preload(region: .lastKnown)
+        ReceiptCache.shared.trim(olderThanDays: 30)
+    }
+}
+`
+};
+
+// src/store.ts
 var DEFAULT_AGENT_MODEL = "claude-sonnet-4-5";
 var STORAGE_KEY = "linear-clone-state-v1";
 function defaultState() {
@@ -23705,7 +24202,8 @@ function defaultState() {
     theme: "dark",
     locale: "en",
     agentTasks: [],
-    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL }
+    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL },
+    codebase: { ...initialCodebase }
   };
 }
 function loadState() {
@@ -23726,7 +24224,8 @@ function loadState() {
       settings: {
         apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
         model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL
-      }
+      },
+      codebase: parsed.codebase && typeof parsed.codebase === "object" ? { ...initialCodebase, ...parsed.codebase } : { ...initialCodebase }
     };
   } catch {
     return defaultState();
@@ -23793,6 +24292,31 @@ function reducer(state, action) {
           finishedAt: action.status === "needsReview" || action.status === "done" || action.status === "failed" ? Date.now() : t.finishedAt
         } : t)
       };
+    case "agentResult":
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? {
+          ...t,
+          status: "needsReview",
+          summary: action.summary,
+          changes: action.changes,
+          finishedAt: Date.now()
+        } : t)
+      };
+    case "applyChanges": {
+      const task = state.agentTasks.find((t) => t.id === action.id);
+      if (!task || task.status !== "needsReview")
+        return state;
+      const codebase = { ...state.codebase };
+      for (const change of task.changes ?? []) {
+        codebase[change.path] = change.after;
+      }
+      return {
+        ...state,
+        codebase,
+        agentTasks: state.agentTasks.map((t) => t.id === action.id ? { ...t, status: "done" } : t)
+      };
+    }
     case "setSettings":
       return { ...state, settings: { ...state.settings, ...action.settings } };
     case "reset":
@@ -23806,32 +24330,32 @@ function nextIssueId(issues2) {
   return `ENG-${maxNum + 1}`;
 }
 function useAppStore() {
-  const [state, dispatch] = import_react13.useReducer(reducer, undefined, loadState);
-  import_react13.useEffect(() => saveState(state), [state]);
-  import_react13.useEffect(() => {
+  const [state, dispatch] = import_react14.useReducer(reducer, undefined, loadState);
+  import_react14.useEffect(() => saveState(state), [state]);
+  import_react14.useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
   }, [state.theme]);
   return { state, dispatch };
 }
 
 // src/App.tsx
-var jsx_dev_runtime18 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime19 = __toESM(require_jsx_dev_runtime(), 1);
 function App() {
   const { state, dispatch } = useAppStore();
   const [view, navigate] = useHashRoute();
-  const [paletteOpen, setPaletteOpen] = import_react14.useState(false);
-  const [modalOpen, setModalOpen] = import_react14.useState(false);
-  const [settingsOpen, setSettingsOpen] = import_react14.useState(false);
-  const [selectedId, setSelectedId] = import_react14.useState(state.issues[0]?.id ?? null);
+  const [paletteOpen, setPaletteOpen] = import_react15.useState(false);
+  const [modalOpen, setModalOpen] = import_react15.useState(false);
+  const [settingsOpen, setSettingsOpen] = import_react15.useState(false);
+  const [selectedId, setSelectedId] = import_react15.useState(state.issues[0]?.id ?? null);
   const allIssues = state.issues;
-  const orderedIds = import_react14.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
+  const orderedIds = import_react15.useMemo(() => statusOrder.flatMap((status) => allIssues.filter((i) => i.status === status).map((i) => i.id)), [allIssues]);
   const addIssue = (partial) => {
     const issue = { ...partial, id: nextIssueId(allIssues), date: "Jul 26" };
     dispatch({ type: "addIssue", issue });
     navigate({ type: "list" });
     setSelectedId(issue.id);
   };
-  import_react14.useEffect(() => {
+  import_react15.useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -23892,12 +24416,12 @@ function App() {
   };
   const toggleTheme = () => dispatch({ type: "setTheme", theme: state.theme === "dark" ? "light" : "dark" });
   const toggleLocale = () => dispatch({ type: "setLocale", locale: state.locale === "en" ? "zh" : "en" });
-  return /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(I18nProvider, {
+  return /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(I18nProvider, {
     locale: state.locale,
-    children: /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+    children: /* @__PURE__ */ jsx_dev_runtime19.jsxDEV("div", {
       className: "app",
       children: [
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(Sidebar, {
+        /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(Sidebar, {
           view,
           onNavigate: navigate,
           theme: state.theme,
@@ -23905,10 +24429,10 @@ function App() {
           locale: state.locale,
           onToggleLocale: toggleLocale
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("main", {
+        /* @__PURE__ */ jsx_dev_runtime19.jsxDEV("main", {
           className: "main",
           children: [
-            view.type === "list" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(IssueList, {
+            view.type === "list" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(IssueList, {
               issues: allIssues,
               selectedId,
               onSelect: setSelectedId,
@@ -23917,37 +24441,52 @@ function App() {
               board: !!view.board,
               onToggleBoard: (board) => navigate({ type: "list", board })
             }, undefined, false, undefined, this),
-            view.type === "issue" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(IssueDetail, {
+            view.type === "issue" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(IssueDetail, {
               issue: allIssues.find((i) => i.id === view.id) ?? allIssues[0],
               onOpenDiff: (id) => navigate({ type: "diff", id }),
               onUpdate: (patch) => view.type === "issue" && dispatch({ type: "updateIssue", id: view.id, patch }),
               agentTask: state.agentTasks.find((a) => a.issueId === view.id && a.status !== "done" && a.status !== "failed"),
               onDelegate: delegateIssue,
-              onViewAgent: () => navigate({ type: "agents" })
+              onViewAgent: () => navigate({ type: "agents" }),
+              onReviewTask: (taskId) => navigate({ type: "task", id: taskId })
             }, undefined, false, undefined, this),
-            view.type === "diff" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(DiffView, {
+            view.type === "diff" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(DiffView, {
               onBack: () => navigate({ type: "list" })
             }, undefined, false, undefined, this),
-            view.type === "inbox" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(InboxView, {
+            view.type === "inbox" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(InboxView, {
               items: state.notifications,
               onRead: (id) => dispatch({ type: "readNotification", id }),
               onReadAll: () => dispatch({ type: "readAllNotifications" }),
               onOpenIssue: openIssue
             }, undefined, false, undefined, this),
-            view.type === "projects" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(ProjectsView, {}, undefined, false, undefined, this),
-            view.type === "agents" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(AgentTasksView, {
+            view.type === "projects" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(ProjectsView, {}, undefined, false, undefined, this),
+            view.type === "agents" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(AgentTasksView, {
               tasks: state.agentTasks,
               onOpenIssue: openIssue,
-              onOpenDiff: () => navigate({ type: "diff", id: "ENG-2498" }),
-              onApprove: (id) => dispatch({ type: "agentStatus", id, status: "done" }),
+              onOpenTask: (id) => navigate({ type: "task", id }),
+              onApprove: (id) => dispatch({ type: "applyChanges", id }),
               onOpenSettings: () => setSettingsOpen(true)
-            }, undefined, false, undefined, this)
+            }, undefined, false, undefined, this),
+            view.type === "task" && (() => {
+              const task = state.agentTasks.find((a) => a.id === view.id);
+              if (!task)
+                return /* @__PURE__ */ jsx_dev_runtime19.jsxDEV("div", {
+                  className: "agents-empty",
+                  children: "Task not found"
+                }, undefined, false, undefined, this);
+              return /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(TaskDiffView, {
+                task,
+                onBack: () => navigate({ type: "agents" }),
+                onApprove: () => dispatch({ type: "applyChanges", id: task.id }),
+                onOpenIssue: openIssue
+              }, undefined, false, undefined, this);
+            })()
           ]
         }, undefined, true, undefined, this),
-        view.type === "issue" && view.id === "ENG-2703" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(FloatingAgentPanel, {
+        view.type === "issue" && view.id === "ENG-2703" && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(FloatingAgentPanel, {
           onOpenDiff: () => navigate({ type: "diff", id: "ENG-2498" })
         }, undefined, false, undefined, this),
-        paletteOpen && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(CommandPalette, {
+        paletteOpen && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(CommandPalette, {
           issues: allIssues,
           theme: state.theme,
           onClose: () => setPaletteOpen(false),
@@ -23974,14 +24513,14 @@ function App() {
             dispatch({ type: "reset" });
           }
         }, undefined, false, undefined, this),
-        modalOpen && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(NewIssueModal, {
+        modalOpen && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(NewIssueModal, {
           onClose: () => setModalOpen(false),
           onCreate: (p) => {
             addIssue(p);
             setModalOpen(false);
           }
         }, undefined, false, undefined, this),
-        settingsOpen && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(SettingsModal, {
+        settingsOpen && /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(SettingsModal, {
           settings: state.settings,
           onSave: (s) => dispatch({ type: "setSettings", settings: s }),
           onClose: () => setSettingsOpen(false)
@@ -23992,8 +24531,8 @@ function App() {
 }
 
 // src/main.tsx
-var jsx_dev_runtime19 = __toESM(require_jsx_dev_runtime(), 1);
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime19.jsxDEV(import_react15.StrictMode, {
-  children: /* @__PURE__ */ jsx_dev_runtime19.jsxDEV(App, {}, undefined, false, undefined, this)
+var jsx_dev_runtime20 = __toESM(require_jsx_dev_runtime(), 1);
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime20.jsxDEV(import_react16.StrictMode, {
+  children: /* @__PURE__ */ jsx_dev_runtime20.jsxDEV(App, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));
 </script></body></html>

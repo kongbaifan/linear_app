@@ -11,10 +11,17 @@ import {
 } from './data/mock'
 
 import type { Locale } from './i18n'
+import { initialCodebase } from './data/codebase'
 
 export type Theme = 'dark' | 'light'
 
 export type AgentTaskStatus = 'queued' | 'working' | 'needsReview' | 'done' | 'failed'
+
+export interface FileChange {
+  path: string
+  before: string
+  after: string
+}
 
 export interface AgentTask {
   id: string
@@ -24,6 +31,7 @@ export interface AgentTask {
   model: string
   steps: string[]
   summary?: string
+  changes?: FileChange[]
   createdAt: number
   finishedAt?: number
 }
@@ -42,6 +50,7 @@ export interface AppState {
   locale: Locale
   agentTasks: AgentTask[]
   settings: AgentSettings
+  codebase: Record<string, string>
 }
 
 export type Action =
@@ -55,6 +64,8 @@ export type Action =
   | { type: 'delegate'; task: AgentTask }
   | { type: 'agentStep'; id: string; step: string }
   | { type: 'agentStatus'; id: string; status: AgentTaskStatus; summary?: string }
+  | { type: 'agentResult'; id: string; summary: string; changes: FileChange[] }
+  | { type: 'applyChanges'; id: string }
   | { type: 'setSettings'; settings: Partial<AgentSettings> }
   | { type: 'reset' }
 
@@ -68,6 +79,7 @@ function defaultState(): AppState {
     locale: 'en',
     agentTasks: [],
     settings: { apiKey: '', model: DEFAULT_AGENT_MODEL },
+    codebase: { ...initialCodebase },
   }
 }
 
@@ -89,6 +101,10 @@ function loadState(): AppState {
         apiKey: typeof parsed.settings?.apiKey === 'string' ? parsed.settings.apiKey : '',
         model: typeof parsed.settings?.model === 'string' ? parsed.settings.model : DEFAULT_AGENT_MODEL,
       },
+      codebase:
+        parsed.codebase && typeof parsed.codebase === 'object'
+          ? { ...initialCodebase, ...parsed.codebase }
+          : { ...initialCodebase },
     }
   } catch {
     return defaultState()
@@ -169,6 +185,36 @@ export function reducer(state: AppState, action: Action): AppState {
             : t,
         ),
       }
+    case 'agentResult':
+      return {
+        ...state,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id
+            ? {
+                ...t,
+                status: 'needsReview' as const,
+                summary: action.summary,
+                changes: action.changes,
+                finishedAt: Date.now(),
+              }
+            : t,
+        ),
+      }
+    case 'applyChanges': {
+      const task = state.agentTasks.find((t) => t.id === action.id)
+      if (!task || task.status !== 'needsReview') return state
+      const codebase = { ...state.codebase }
+      for (const change of task.changes ?? []) {
+        codebase[change.path] = change.after
+      }
+      return {
+        ...state,
+        codebase,
+        agentTasks: state.agentTasks.map((t) =>
+          t.id === action.id ? { ...t, status: 'done' as const } : t,
+        ),
+      }
+    }
     case 'setSettings':
       return { ...state, settings: { ...state.settings, ...action.settings } }
     case 'reset':

@@ -34,13 +34,13 @@ function elapsed(t: AgentTask): string {
 export default function AgentTasksView({
   tasks,
   onOpenIssue,
-  onOpenDiff,
+  onOpenTask,
   onApprove,
   onOpenSettings,
 }: {
   tasks: AgentTask[]
   onOpenIssue: (id: string) => void
-  onOpenDiff: () => void
+  onOpenTask: (id: string) => void
   onApprove: (id: string) => void
   onOpenSettings: () => void
 }) {
@@ -101,7 +101,7 @@ export default function AgentTasksView({
                       className="btn sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        onOpenDiff()
+                        onOpenTask(task.id)
                       }}
                     >
                       <Eye size={12} />

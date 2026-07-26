@@ -146,6 +146,7 @@ export default function IssueDetail({
   agentTask,
   onDelegate,
   onViewAgent,
+  onReviewTask,
 }: {
   issue: Issue
   onOpenDiff: (id: string) => void
@@ -153,6 +154,7 @@ export default function IssueDetail({
   agentTask?: AgentTask
   onDelegate: (issue: Issue) => void
   onViewAgent: () => void
+  onReviewTask: (taskId: string) => void
 }) {
   const { t } = useI18n()
   return (
@@ -304,7 +306,7 @@ export default function IssueDetail({
             </button>
           )}
           {agentTask && agentTask.status === 'needsReview' && (
-            <button className="btn sm delegate-btn review" onClick={() => onOpenDiff('ENG-2498')}>
+            <button className="btn sm delegate-btn review" onClick={() => onReviewTask(agentTask.id)}>
               <LinageLogo size={11} />
               {t('agents.review')}
             </button>
