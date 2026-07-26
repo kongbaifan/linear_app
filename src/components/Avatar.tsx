@@ -1,5 +1,5 @@
 import { users } from '../data/mock'
-import { LinearLogo } from './Icons'
+import { LinageLogo } from './Icons'
 
 export function Avatar({ user, size = 'md' }: { user: string; size?: 'sm' | 'md' }) {
   const u = users[user]
@@ -7,7 +7,7 @@ export function Avatar({ user, size = 'md' }: { user: string; size?: 'sm' | 'md'
   if (!u) {
     return (
       <span className={`${cls} bot`}>
-        <LinearLogo size={size === 'sm' ? 8 : 9} />
+        <LinageLogo size={size === 'sm' ? 8 : 9} />
       </span>
     )
   }
@@ -21,7 +21,7 @@ export function Avatar({ user, size = 'md' }: { user: string; size?: 'sm' | 'md'
 export function BotAvatar({ size = 'md' }: { size?: 'sm' | 'md' }) {
   return (
     <span className={`avatar bot${size === 'sm' ? ' sm' : ''}`}>
-      <LinearLogo size={size === 'sm' ? 8 : 9} />
+      <LinageLogo size={size === 'sm' ? 8 : 9} />
     </span>
   )
 }

@@ -20,7 +20,7 @@ import {
   StatusInProgress,
   SubIssueArrow,
   ArrowUp,
-  LinearLogo,
+  LinageLogo,
 } from './Icons'
 
 function EventText({ parts, time }: { parts: EventPart[]; time: string }) {
@@ -285,15 +285,15 @@ export default function IssueDetail({
               <SubIssueArrow size={12} />
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <LinearLogo size={11} />
-              Linear
+              <LinageLogo size={11} />
+              Linage
             </span>
           </button>
 
           <div className="prop-label">Agent</div>
           {!agentTask && (
             <button className="btn sm delegate-btn" onClick={() => onDelegate(issue)}>
-              <LinearLogo size={11} />
+              <LinageLogo size={11} />
               {t('agents.delegate')}
             </button>
           )}
@@ -305,7 +305,7 @@ export default function IssueDetail({
           )}
           {agentTask && agentTask.status === 'needsReview' && (
             <button className="btn sm delegate-btn review" onClick={() => onOpenDiff('ENG-2498')}>
-              <LinearLogo size={11} />
+              <LinageLogo size={11} />
               {t('agents.review')}
             </button>
           )}

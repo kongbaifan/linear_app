@@ -1,4 +1,4 @@
-// ─── Mock data for the Linear-style clone ────────────────────────
+// ─── Mock data for Linage ────────────────────────
 
 export type StatusKey = 'inProgress' | 'todo' | 'done' | 'backlog'
 export type PriorityKey = 'urgent' | 'high' | 'medium' | 'low'
@@ -121,7 +121,7 @@ export const eng2703Activity: ActivityItem[] = [
     kind: 'event',
     icon: 'bot',
     html: [
-      { t: 'strong', s: 'Linear' },
+      { t: 'strong', s: 'Linage' },
       { t: 'text', s: ' created the issue via Slack on behalf of ' },
       { t: 'strong', s: 'karri' },
     ],
@@ -157,7 +157,7 @@ export const eng2703Activity: ActivityItem[] = [
         time: 'just now',
         reply: true,
         body: [
-          { t: 'mention', s: '@Linear' },
+          { t: 'mention', s: '@Linage' },
           { t: 'text', s: ' can you take a stab at this?' },
         ],
       },
@@ -167,7 +167,7 @@ export const eng2703Activity: ActivityItem[] = [
     kind: 'event',
     icon: 'link',
     html: [
-      { t: 'strong', s: 'Linear' },
+      { t: 'strong', s: 'Linage' },
       { t: 'text', s: ' connected by ' },
       { t: 'strong', s: 'jori' },
     ],
@@ -178,7 +178,7 @@ export const eng2703Activity: ActivityItem[] = [
     kind: 'event',
     icon: 'status',
     html: [
-      { t: 'strong', s: 'Linear' },
+      { t: 'strong', s: 'Linage' },
       { t: 'text', s: ' moved from ' },
       { t: 'strong', s: 'Todo' },
       { t: 'text', s: ' to ' },
@@ -301,7 +301,7 @@ export interface Notification {
   issueId: string
   issueTitle: string
   event: string
-  actor?: string // key of users, undefined = Linear bot
+  actor?: string // key of users, undefined = Linage bot
   time: string
   unread: boolean
   kind: 'status' | 'comment' | 'mention' | 'label' | 'pr'
@@ -312,7 +312,7 @@ export const notifications: Notification[] = [
     id: 'n1',
     issueId: 'ENG-2703',
     issueTitle: 'Faster app launch',
-    event: 'Linear moved from Todo to In Progress',
+    event: 'Linage moved from Todo to In Progress',
     time: 'just now',
     unread: true,
     kind: 'status',
@@ -340,7 +340,7 @@ export const notifications: Notification[] = [
     id: 'n4',
     issueId: 'ENG-2703',
     issueTitle: 'Faster app launch',
-    event: 'jori mentioned @Linear: "can you take a stab at this?"',
+    event: 'jori mentioned @Linage: "can you take a stab at this?"',
     actor: 'jori',
     time: '25m',
     unread: false,

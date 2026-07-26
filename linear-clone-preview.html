@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Linear Clone Preview</title><style>/* src/styles/global.css */
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Linage</title><style>/* src/styles/global.css */
 :root {
   --bg-app: #08090a;
   --bg-surface: #101012;
@@ -19435,8 +19435,8 @@ var en = {
   "modal.cancel": "Cancel",
   "modal.create": "Create issue",
   "agent.workedFor": "Worked for",
-  "agent.inputPlaceholder": "Tell Linear what to do next…",
-  "agent.open": "Open Linear agent",
+  "agent.inputPlaceholder": "Tell Linage what to do next…",
+  "agent.open": "Open Linage agent",
   "agents.title": "Agent tasks",
   "agents.empty": "No agent tasks yet — open an issue and delegate it to the agent.",
   "agents.status.queued": "Queued",
@@ -19537,8 +19537,8 @@ var zh = {
   "modal.cancel": "取消",
   "modal.create": "创建事项",
   "agent.workedFor": "已工作",
-  "agent.inputPlaceholder": "告诉 Linear 接下来做什么…",
-  "agent.open": "打开 Linear agent",
+  "agent.inputPlaceholder": "告诉 Linage 接下来做什么…",
+  "agent.open": "打开 Linage agent",
   "agents.title": "Agent 任务",
   "agents.empty": "还没有 Agent 任务——打开一个事项,把它委派给 Agent 试试。",
   "agents.status.queued": "排队中",
@@ -19585,14 +19585,25 @@ var S = ({ size = 16, children, viewBox = "0 0 16 16", ...rest }) => /* @__PURE_
   color: rest.color,
   children
 }, undefined, false, undefined, this);
-var LinearLogo = ({ size = 12 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
+var LinageLogo = ({ size = 12 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
   size,
   viewBox: "0 0 100 100",
-  children: /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
-    fill: "currentColor",
-    d: "M1.22 61.52a2 2 0 0 1 .52-1.9l35.64 35.64a2 2 0 0 1-1.9.52A50.06 50.06 0 0 1 1.22 61.52ZM.02 46.89a2 2 0 0 0 .58 1.55l50.96 50.96a2 2 0 0 0 1.55.58 49.8 49.8 0 0 0 12.5-2.72 2 2 0 0 0 .72-3.3L5.05 32.95a2 2 0 0 0-3.3.72A49.8 49.8 0 0 0 .02 46.9ZM4.21 25.98a2 2 0 0 0 .36 2.34l67.11 67.11a2 2 0 0 0 2.34.36 50.25 50.25 0 0 0 9.17-6.29 2 2 0 0 0 .1-2.92L10.42 16.71a2 2 0 0 0-2.92.1 50.25 50.25 0 0 0-6.29 9.17ZM14.85 11.14a2 2 0 0 1-.09-2.91A49.85 49.85 0 0 1 50 0c27.61 0 50 22.39 50 50a49.85 49.85 0 0 1-8.23 27.24 2 2 0 0 1-2.91-.09L14.85 11.14Z"
-  }, undefined, false, undefined, this)
-}, undefined, false, undefined, this);
+  children: [
+    /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+      d: "M30 14 L30 62 Q30 84 52 84 L86 84",
+      stroke: "currentColor",
+      strokeWidth: "17",
+      strokeLinecap: "round",
+      fill: "none"
+    }, undefined, false, undefined, this),
+    /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("circle", {
+      cx: "72",
+      cy: "32",
+      r: "11",
+      fill: "currentColor"
+    }, undefined, false, undefined, this)
+  ]
+}, undefined, true, undefined, this);
 var Search = ({ size = 15 }) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(S, {
   size,
   children: [
@@ -20284,11 +20295,11 @@ function Sidebar({
             children: [
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
                 className: "workspace-logo",
-                children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(LinearLogo, {
+                children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(LinageLogo, {
                   size: 10
                 }, undefined, false, undefined, this)
               }, undefined, false, undefined, this),
-              "Linear",
+              "Linage",
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(ChevronDown, {
                 size: 11
               }, undefined, false, undefined, this)
@@ -20551,7 +20562,7 @@ var eng2703Activity = [
     kind: "event",
     icon: "bot",
     html: [
-      { t: "strong", s: "Linear" },
+      { t: "strong", s: "Linage" },
       { t: "text", s: " created the issue via Slack on behalf of " },
       { t: "strong", s: "karri" }
     ],
@@ -20587,7 +20598,7 @@ var eng2703Activity = [
         time: "just now",
         reply: true,
         body: [
-          { t: "mention", s: "@Linear" },
+          { t: "mention", s: "@Linage" },
           { t: "text", s: " can you take a stab at this?" }
         ]
       }
@@ -20597,7 +20608,7 @@ var eng2703Activity = [
     kind: "event",
     icon: "link",
     html: [
-      { t: "strong", s: "Linear" },
+      { t: "strong", s: "Linage" },
       { t: "text", s: " connected by " },
       { t: "strong", s: "jori" }
     ],
@@ -20608,7 +20619,7 @@ var eng2703Activity = [
     kind: "event",
     icon: "status",
     html: [
-      { t: "strong", s: "Linear" },
+      { t: "strong", s: "Linage" },
       { t: "text", s: " moved from " },
       { t: "strong", s: "Todo" },
       { t: "text", s: " to " },
@@ -20710,7 +20721,7 @@ var notifications = [
     id: "n1",
     issueId: "ENG-2703",
     issueTitle: "Faster app launch",
-    event: "Linear moved from Todo to In Progress",
+    event: "Linage moved from Todo to In Progress",
     time: "just now",
     unread: true,
     kind: "status"
@@ -20738,7 +20749,7 @@ var notifications = [
     id: "n4",
     issueId: "ENG-2703",
     issueTitle: "Faster app launch",
-    event: 'jori mentioned @Linear: "can you take a stab at this?"',
+    event: 'jori mentioned @Linage: "can you take a stab at this?"',
     actor: "jori",
     time: "25m",
     unread: false,
@@ -20829,7 +20840,7 @@ function Avatar({ user, size = "md" }) {
   if (!u) {
     return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
       className: `${cls} bot`,
-      children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(LinearLogo, {
+      children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(LinageLogo, {
         size: size === "sm" ? 8 : 9
       }, undefined, false, undefined, this)
     }, undefined, false, undefined, this);
@@ -20843,7 +20854,7 @@ function Avatar({ user, size = "md" }) {
 function BotAvatar({ size = "md" }) {
   return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
     className: `avatar bot${size === "sm" ? " sm" : ""}`,
-    children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(LinearLogo, {
+    children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(LinageLogo, {
       size: size === "sm" ? 8 : 9
     }, undefined, false, undefined, this)
   }, undefined, false, undefined, this);
@@ -21785,10 +21796,10 @@ function IssueDetail({
                   /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
                     style: { display: "inline-flex", alignItems: "center", gap: 8 },
                     children: [
-                      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinearLogo, {
+                      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinageLogo, {
                         size: 11
                       }, undefined, false, undefined, this),
-                      "Linear"
+                      "Linage"
                     ]
                   }, undefined, true, undefined, this)
                 ]
@@ -21801,7 +21812,7 @@ function IssueDetail({
                 className: "btn sm delegate-btn",
                 onClick: () => onDelegate(issue),
                 children: [
-                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinearLogo, {
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinageLogo, {
                     size: 11
                   }, undefined, false, undefined, this),
                   t("agents.delegate")
@@ -21821,7 +21832,7 @@ function IssueDetail({
                 className: "btn sm delegate-btn review",
                 onClick: () => onOpenDiff("ENG-2498"),
                 children: [
-                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinearLogo, {
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LinageLogo, {
                     size: 11
                   }, undefined, false, undefined, this),
                   t("agents.review")
@@ -21995,7 +22006,7 @@ function PanelHeader({
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
             className: "agent-name",
-            children: "Linear"
+            children: "Linage"
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
             className: "model-badge",
@@ -22173,7 +22184,7 @@ function FloatingAgentPanel({ onOpenDiff }) {
                       /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("b", {
                         children: "jori"
                       }, undefined, false, undefined, this),
-                      " connected Linear to ENG-2703"
+                      " connected Linage to ENG-2703"
                     ]
                   }, undefined, true, undefined, this)
                 ]
@@ -23109,7 +23120,7 @@ function NewIssueModal({
             /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
               className: "workspace-logo",
               style: { width: 16, height: 16 },
-              children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(LinearLogo, {
+              children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(LinageLogo, {
                 size: 9
               }, undefined, false, undefined, this)
             }, undefined, false, undefined, this),

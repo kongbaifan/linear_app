@@ -4,7 +4,7 @@ import { users } from '../data/mock'
 import { Dropdown } from './Dropdown'
 import { allLabels, priorityMeta, priorityOrder, statusMeta, statusOrder } from './meta'
 import { Avatar } from './Avatar'
-import { LinearLogo } from './Icons'
+import { LinageLogo } from './Icons'
 import { useI18n } from '../i18n'
 
 export default function NewIssueModal({
@@ -44,7 +44,7 @@ export default function NewIssueModal({
       <div className="modal">
         <div className="modal-breadcrumb">
           <span className="workspace-logo" style={{ width: 16, height: 16 }}>
-            <LinearLogo size={9} />
+            <LinageLogo size={9} />
           </span>
           ENG
           <span className="crumb-sep">›</span>

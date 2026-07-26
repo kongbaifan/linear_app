@@ -1,4 +1,4 @@
-// Compact inline SVG icon set, approximating Linear's iconography.
+// Compact inline SVG icon set for Linage.
 import type { CSSProperties } from 'react'
 
 type P = { size?: number; color?: string; style?: CSSProperties; className?: string }
@@ -18,12 +18,16 @@ const S = ({ size = 16, children, viewBox = '0 0 16 16', ...rest }: P & { childr
   </svg>
 )
 
-export const LinearLogo = ({ size = 12 }: P) => (
+export const LinageLogo = ({ size = 12 }: P) => (
   <S size={size} viewBox="0 0 100 100">
     <path
-      fill="currentColor"
-      d="M1.22 61.52a2 2 0 0 1 .52-1.9l35.64 35.64a2 2 0 0 1-1.9.52A50.06 50.06 0 0 1 1.22 61.52ZM.02 46.89a2 2 0 0 0 .58 1.55l50.96 50.96a2 2 0 0 0 1.55.58 49.8 49.8 0 0 0 12.5-2.72 2 2 0 0 0 .72-3.3L5.05 32.95a2 2 0 0 0-3.3.72A49.8 49.8 0 0 0 .02 46.9ZM4.21 25.98a2 2 0 0 0 .36 2.34l67.11 67.11a2 2 0 0 0 2.34.36 50.25 50.25 0 0 0 9.17-6.29 2 2 0 0 0 .1-2.92L10.42 16.71a2 2 0 0 0-2.92.1 50.25 50.25 0 0 0-6.29 9.17ZM14.85 11.14a2 2 0 0 1-.09-2.91A49.85 49.85 0 0 1 50 0c27.61 0 50 22.39 50 50a49.85 49.85 0 0 1-8.23 27.24 2 2 0 0 1-2.91-.09L14.85 11.14Z"
+      d="M30 14 L30 62 Q30 84 52 84 L86 84"
+      stroke="currentColor"
+      strokeWidth="17"
+      strokeLinecap="round"
+      fill="none"
     />
+    <circle cx="72" cy="32" r="11" fill="currentColor" />
   </S>
 )
 

@@ -7,7 +7,7 @@ import {
   Inbox,
   Initiatives,
   Insights,
-  LinearLogo,
+  LinageLogo,
   Moon,
   More,
   MyIssues,
@@ -48,9 +48,9 @@ export default function Sidebar({
       <div className="sidebar-top">
         <button className="workspace-switcher">
           <span className="workspace-logo">
-            <LinearLogo size={10} />
+            <LinageLogo size={10} />
           </span>
-          Linear
+          Linage
           <ChevronDown size={11} />
         </button>
         <div className="sidebar-top-actions">

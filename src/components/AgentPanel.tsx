@@ -95,7 +95,7 @@ function PanelHeader({
     <div className="agent-header">
       <div className="agent-header-left">
         <BotAvatar size="sm" />
-        <span className="agent-name">Linear</span>
+        <span className="agent-name">Linage</span>
         <span className="model-badge">Opus 4.8</span>
       </div>
       <div className="agent-header-actions">
@@ -195,7 +195,7 @@ export function FloatingAgentPanel({ onOpenDiff }: { onOpenDiff: () => void }) {
             <div className="agent-line">
               <Avatar user="jori" size="sm" />
               <span>
-                <b>jori</b> connected Linear to ENG-2703
+                <b>jori</b> connected Linage to ENG-2703
               </span>
             </div>
             <div className="agent-text">Examining the startup path…</div>

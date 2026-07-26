@@ -108,8 +108,8 @@ const en = {
 
   // agent panel
   'agent.workedFor': 'Worked for',
-  'agent.inputPlaceholder': 'Tell Linear what to do next…',
-  'agent.open': 'Open Linear agent',
+  'agent.inputPlaceholder': 'Tell Linage what to do next…',
+  'agent.open': 'Open Linage agent',
 
   // agent workbench
   'agents.title': 'Agent tasks',
@@ -224,8 +224,8 @@ const zh: Record<MessageKey, string> = {
   'modal.create': '创建事项',
 
   'agent.workedFor': '已工作',
-  'agent.inputPlaceholder': '告诉 Linear 接下来做什么…',
-  'agent.open': '打开 Linear agent',
+  'agent.inputPlaceholder': '告诉 Linage 接下来做什么…',
+  'agent.open': '打开 Linage agent',
 
   'agents.title': 'Agent 任务',
   'agents.empty': '还没有 Agent 任务——打开一个事项,把它委派给 Agent 试试。',

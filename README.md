@@ -1,6 +1,6 @@
-# Linear Clone
+# Linage
 
-复刻 Linear.app 深色界面风格的 React 演示应用:
+Linage — 类 Linear 交互品质的项目管理 + AI Agent 工作台(React 演示应用,界面风格致敬 Linear.app):
 
 - **My issues** — 按状态分组的 issue 列表(优先级图标、标签、负责人头像),右上角可切换 **看板视图**(卡片拖拽换列改状态)
 - **Inbox** — 通知列表(未读圆点、事件摘要、Mark all read),点击跳转对应 issue
