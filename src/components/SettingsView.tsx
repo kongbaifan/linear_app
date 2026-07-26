@@ -1,10 +1,20 @@
 import { useRef, useState } from 'react'
-import type { AgentSettings, Theme } from '../store'
-import { DEFAULT_AGENT_MODEL } from '../store'
-import { useI18n, type Locale } from '../i18n'
+import type { AgentSettings, ProviderKind, ProviderSettings, Theme } from '../store'
+import { PROVIDER_DEFAULTS } from '../store'
+import { useI18n, type Locale, type MessageKey } from '../i18n'
 import { Moon, StatusDone, Sun } from './Icons'
 
-const MODEL_OPTIONS = ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5']
+const MODEL_HINTS: Record<ProviderKind, string[]> = {
+  simulated: [],
+  anthropic: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5'],
+  openai: ['gpt-4o-mini', 'gpt-4o', 'deepseek-chat', 'deepseek-reasoner', 'kimi-k2', 'glm-4.7', 'qwen3-coder'],
+}
+
+const KIND_LABEL: Record<ProviderKind, MessageKey> = {
+  simulated: 'provider.simulated',
+  anthropic: 'provider.anthropic',
+  openai: 'provider.openai',
+}
 
 type TestState = { status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }
 
@@ -26,11 +36,14 @@ function TestBadge({ state }: { state: TestState }) {
   return <span className="test-result fail">✕ {state.message ?? t('settings.testFail')}</span>
 }
 
+const stripSlash = (u: string) => u.replace(/\/+$/, '')
+
 export default function SettingsView({
   settings,
   theme,
   locale,
   onSettings,
+  onProvider,
   onTheme,
   onLocale,
   onExport,
@@ -41,7 +54,8 @@ export default function SettingsView({
   settings: AgentSettings
   theme: Theme
   locale: Locale
-  onSettings: (patch: Partial<AgentSettings>) => void
+  onSettings: (patch: Partial<Omit<AgentSettings, 'provider'>>) => void
+  onProvider: (patch: Partial<ProviderSettings>) => void
   onTheme: (t: Theme) => void
   onLocale: (l: Locale) => void
   onExport: () => void
@@ -50,28 +64,63 @@ export default function SettingsView({
   storageBytes: number
 }) {
   const { t } = useI18n()
+  const provider = settings.provider
   const fileRef = useRef<HTMLInputElement>(null)
   const [aiTest, setAiTest] = useState<TestState>({ status: 'idle' })
   const [ghTest, setGhTest] = useState<TestState>({ status: 'idle' })
 
-  const testAnthropic = async () => {
+  const switchKind = (kind: ProviderKind) => {
+    if (kind === provider.kind) return
+    const prevDefaults = PROVIDER_DEFAULTS[provider.kind]
+    const nextDefaults = PROVIDER_DEFAULTS[kind]
+    onProvider({
+      kind,
+      // Base URL: keep only if the user typed a custom one.
+      baseUrl:
+        !provider.baseUrl || provider.baseUrl === prevDefaults.baseUrl
+          ? nextDefaults.baseUrl
+          : provider.baseUrl,
+      // Model: vendor families don't share model names — reset to the new
+      // default unless the current value already belongs to the new family.
+      model: MODEL_HINTS[kind].includes(provider.model) ? provider.model : nextDefaults.model,
+    })
+    setAiTest({ status: 'idle' })
+  }
+
+  const testProvider = async () => {
     setAiTest({ status: 'testing' })
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': settings.apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: settings.model || DEFAULT_AGENT_MODEL,
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'ping' }],
-        }),
-      })
-      if (res.ok) setAiTest({ status: 'ok' })
+      let res: Response
+      if (provider.kind === 'anthropic') {
+        res = await fetch(`${stripSlash(provider.baseUrl || PROVIDER_DEFAULTS.anthropic.baseUrl)}/v1/messages`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': provider.apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            max_tokens: 1,
+            messages: [{ role: 'user', content: 'ping' }],
+          }),
+        })
+      } else {
+        res = await fetch(`${stripSlash(provider.baseUrl || PROVIDER_DEFAULTS.openai.baseUrl)}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${provider.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            max_tokens: 1,
+            messages: [{ role: 'user', content: 'ping' }],
+          }),
+        })
+      }
+      if (res.ok) setAiTest({ status: 'ok', message: `${provider.model} · ${t('settings.testOk')}` })
       else setAiTest({ status: 'fail', message: `HTTP ${res.status}` })
     } catch (e) {
       setAiTest({ status: 'fail', message: e instanceof Error ? e.message : String(e) })
@@ -106,39 +155,67 @@ export default function SettingsView({
         </div>
       </header>
       <div className="settings-page">
-        {/* ── AI ─────────────────────────────────────────────── */}
+        {/* ── AI provider ────────────────────────────────────── */}
         <section className="settings-section">
           <h3 className="settings-section-title">{t('settings.aiSection')}</h3>
           <p className="settings-section-desc">{t('settings.aiDesc')}</p>
 
-          <label className="settings-label">{t('agents.apiKey')}</label>
-          <div className="settings-row">
-            <input
-              className="settings-input"
-              type="password"
-              placeholder="sk-ant-…"
-              value={settings.apiKey}
-              onChange={(e) => onSettings({ apiKey: e.target.value.trim() })}
-            />
-            <button className="btn sm" onClick={testAnthropic} disabled={!settings.apiKey}>
-              {t('settings.test')}
-            </button>
-          </div>
-          <TestBadge state={aiTest} />
-
-          <label className="settings-label">{t('agents.model')}</label>
-          <input
-            className="settings-input"
-            list="model-options"
-            value={settings.model}
-            onChange={(e) => onSettings({ model: e.target.value.trim() || DEFAULT_AGENT_MODEL })}
-          />
-          <datalist id="model-options">
-            {MODEL_OPTIONS.map((m) => (
-              <option key={m} value={m} />
+          <label className="settings-label">{t('provider.kind')}</label>
+          <div className="tab-group" style={{ display: 'inline-flex' }}>
+            {(['simulated', 'anthropic', 'openai'] as const).map((kind) => (
+              <button
+                key={kind}
+                className={`tab${provider.kind === kind ? ' active' : ''}`}
+                onClick={() => switchKind(kind)}
+              >
+                {t(KIND_LABEL[kind])}
+              </button>
             ))}
-          </datalist>
-          <div className="settings-hint">{t('agents.apiKeyHint')}</div>
+          </div>
+
+          {provider.kind !== 'simulated' && (
+            <>
+              <label className="settings-label">{t('provider.baseUrl')}</label>
+              <input
+                className="settings-input"
+                placeholder={PROVIDER_DEFAULTS[provider.kind].baseUrl}
+                value={provider.baseUrl}
+                onChange={(e) => onProvider({ baseUrl: e.target.value.trim() })}
+              />
+              <div className="settings-hint">
+                {provider.kind === 'openai' ? t('provider.openaiHint') : t('provider.anthropicHint')}
+              </div>
+
+              <label className="settings-label">API key</label>
+              <div className="settings-row">
+                <input
+                  className="settings-input"
+                  type="password"
+                  placeholder={provider.kind === 'anthropic' ? 'sk-ant-…' : 'sk-…'}
+                  value={provider.apiKey}
+                  onChange={(e) => onProvider({ apiKey: e.target.value.trim() })}
+                />
+                <button className="btn sm" onClick={testProvider} disabled={!provider.apiKey}>
+                  {t('settings.test')}
+                </button>
+              </div>
+              <TestBadge state={aiTest} />
+
+              <label className="settings-label">{t('agents.model')}</label>
+              <input
+                className="settings-input"
+                list="model-options"
+                value={provider.model}
+                onChange={(e) => onProvider({ model: e.target.value.trim() })}
+              />
+              <datalist id="model-options">
+                {MODEL_HINTS[provider.kind].map((m) => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
+              <div className="settings-hint">{t('agents.apiKeyHint')}</div>
+            </>
+          )}
         </section>
 
         {/* ── GitHub ─────────────────────────────────────────── */}

@@ -104,7 +104,7 @@ export default function App() {
         issueId: issue.id,
         title: issue.title,
         status: 'queued',
-        model: state.settings.model,
+        model: state.settings.provider.kind === 'simulated' ? 'simulated' : state.settings.provider.model,
         steps: [],
         target: githubMode ? 'github' : 'virtual',
         repo: githubMode ? state.settings.githubRepo : undefined,
@@ -213,6 +213,7 @@ export default function App() {
             theme={state.theme}
             locale={state.locale}
             onSettings={(patch) => dispatch({ type: 'setSettings', settings: patch })}
+            onProvider={(patch) => dispatch({ type: 'setProvider', provider: patch })}
             onTheme={(th) => dispatch({ type: 'setTheme', theme: th })}
             onLocale={(lo) => dispatch({ type: 'setLocale', locale: lo })}
             onExport={() => {

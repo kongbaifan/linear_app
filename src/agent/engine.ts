@@ -83,16 +83,22 @@ export function useAgentEngine(state: AppState, dispatch: React.Dispatch<Action>
         const input = {
           issueId: task.issueId,
           title: task.title,
-          model: state.settings.model,
-          apiKey: state.settings.apiKey || undefined,
+          provider: state.settings.provider,
           codebase,
         }
         let result
         try {
-          result = await pickProvider(state.settings.apiKey || undefined).run(input)
-        } catch {
-          // Real API unreachable / bad key / bad response — degrade gracefully.
+          result = await pickProvider(state.settings.provider).run(input)
+        } catch (e) {
+          // Real API unreachable / bad key / bad response — degrade gracefully,
+          // but say so honestly instead of passing simulation off as real output.
+          const reason = e instanceof Error ? e.message : String(e)
           result = await simulatedProvider.run(input)
+          result = {
+            ...result,
+            steps: [`⚠ ${state.settings.provider.kind} provider failed (${reason}) — fell back to simulation`, ...result.steps],
+            summary: `[Simulated fallback — ${state.settings.provider.kind} call failed: ${reason}] ${result.summary}`,
+          }
         }
         for (const step of result.steps) {
           await new Promise((r) => setTimeout(r, STEP_DELAY_MS))

@@ -1,11 +1,13 @@
 // Agent provider abstraction.
 // Providers return a work log plus STRUCTURED CODE EDITS (find/replace)
-// against the virtual codebase. The engine resolves edits into concrete
+// against the codebase. The engine resolves edits into concrete
 // before/after file changes that render as reviewable diffs.
 //
-// - SimulatedProvider: default, no network — deterministic edits.
-// - AnthropicProvider: real Claude API call from the browser (user's own
-//   API key, stored locally; the engine falls back to simulation on error).
+// - simulated: default, no network — deterministic edits.
+// - anthropic: Claude Messages API, custom base URL supported (relays).
+// - openai:    any OpenAI-compatible /chat/completions endpoint —
+//              OpenAI, DeepSeek, Kimi, GLM, Qwen, one-api relay stations, …
+import type { ProviderSettings } from '../store'
 
 export interface AgentEdit {
   path: string
@@ -16,8 +18,7 @@ export interface AgentEdit {
 export interface AgentRunInput {
   issueId: string
   title: string
-  model: string
-  apiKey?: string
+  provider: ProviderSettings
   codebase: Record<string, string>
 }
 
@@ -30,6 +31,41 @@ export interface AgentRunResult {
 export interface AgentProvider {
   run(input: AgentRunInput): Promise<AgentRunResult>
 }
+
+// ─── Shared prompt / parsing ────────────────────────────────────
+
+function buildPrompt(input: AgentRunInput): string {
+  const files = Object.entries(input.codebase)
+    .map(([path, content]) => `--- ${path} ---\n${content}`)
+    .join('\n\n')
+  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".
+
+Here is the codebase:
+
+${files}
+
+Make a focused change that addresses the issue. Respond with ONLY a JSON object:
+{
+  "steps": [4-6 short past-tense work-log lines],
+  "summary": "1-2 sentence result summary",
+  "edits": [{"path": "<exact file path>", "find": "<exact text copied verbatim from the file>", "replace": "<replacement text>"}]
+}
+Rules: "find" must be an EXACT substring of the file at "path" (copy it character-for-character, including indentation). Keep edits minimal. 1-3 edits max.`
+}
+
+function parseAgentJson(text: string): AgentRunResult {
+  const parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1))
+  if (!Array.isArray(parsed.steps) || typeof parsed.summary !== 'string' || !Array.isArray(parsed.edits)) {
+    throw new Error('bad response shape')
+  }
+  const edits: AgentEdit[] = parsed.edits
+    .filter((e: AgentEdit) => e && typeof e.path === 'string' && typeof e.find === 'string')
+    .map((e: AgentEdit) => ({ path: e.path, find: e.find, replace: String(e.replace ?? '') }))
+  if (edits.length === 0) throw new Error('no valid edits')
+  return { steps: parsed.steps.map(String), summary: parsed.summary, edits }
+}
+
+const stripSlash = (u: string) => u.replace(/\/+$/, '')
 
 // ─── Simulated provider ─────────────────────────────────────────
 
@@ -157,68 +193,68 @@ export const simulatedProvider: AgentProvider = {
         `Scanned ${paths.length} files for relevant code`,
         `Selected ${path} as the entry point`,
         'Drafted a marker change for review',
-        'No API key configured — running in simulation mode',
+        'No AI provider configured — running in simulation mode',
       ],
-      summary: `Simulation mode: proposed a marker edit in ${path}. Add an Anthropic API key in Agent settings to let Claude produce a real change.`,
+      summary: `Simulation mode: proposed a marker edit in ${path}. Configure an AI provider in Settings to get real changes.`,
       edits: [{ path, find: firstLine, replace: firstLine + marker }],
     }
   },
 }
 
-// ─── Anthropic provider (browser-direct) ────────────────────────
+// ─── Anthropic (Claude) — custom base URL supported ─────────────
+
+export const DEFAULT_ANTHROPIC_BASE = 'https://api.anthropic.com'
 
 export const anthropicProvider: AgentProvider = {
   async run(input) {
-    const files = Object.entries(input.codebase)
-      .map(([path, content]) => `--- ${path} ---\n${content}`)
-      .join('\n\n')
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const base = stripSlash(input.provider.baseUrl || DEFAULT_ANTHROPIC_BASE)
+    const res = await fetch(`${base}/v1/messages`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': input.apiKey ?? '',
+        'x-api-key': input.provider.apiKey,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: input.model,
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'user',
-            content: `You are a coding agent. Issue ${input.issueId}: "${input.title}".
-
-Here is the codebase:
-
-${files}
-
-Make a focused change that addresses the issue. Respond with ONLY a JSON object:
-{
-  "steps": [4-6 short past-tense work-log lines],
-  "summary": "1-2 sentence result summary",
-  "edits": [{"path": "<exact file path>", "find": "<exact text copied verbatim from the file>", "replace": "<replacement text>"}]
-}
-Rules: "find" must be an EXACT substring of the file at "path" (copy it character-for-character, including indentation). Keep edits minimal. 1-3 edits max.`,
-          },
-        ],
+        model: input.provider.model,
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: buildPrompt(input) }],
       }),
     })
-    if (!res.ok) throw new Error(`API ${res.status}`)
+    if (!res.ok) throw new Error(`Anthropic API ${res.status}`)
     const data = await res.json()
-    const text: string = data.content?.[0]?.text ?? ''
-    const parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1))
-    if (!Array.isArray(parsed.steps) || typeof parsed.summary !== 'string' || !Array.isArray(parsed.edits)) {
-      throw new Error('bad response shape')
-    }
-    const edits: AgentEdit[] = parsed.edits
-      .filter((e: AgentEdit) => e && typeof e.path === 'string' && typeof e.find === 'string')
-      .map((e: AgentEdit) => ({ path: e.path, find: e.find, replace: String(e.replace ?? '') }))
-    if (edits.length === 0) throw new Error('no valid edits')
-    return { steps: parsed.steps.map(String), summary: parsed.summary, edits }
+    return parseAgentJson(data.content?.[0]?.text ?? '')
   },
 }
 
-export function pickProvider(apiKey?: string): AgentProvider {
-  return apiKey ? anthropicProvider : simulatedProvider
+// ─── OpenAI-compatible (relays / 中转站 / DeepSeek / Kimi / …) ──
+
+export const DEFAULT_OPENAI_BASE = 'https://api.openai.com/v1'
+
+export const openaiProvider: AgentProvider = {
+  async run(input) {
+    const base = stripSlash(input.provider.baseUrl || DEFAULT_OPENAI_BASE)
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${input.provider.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: input.provider.model,
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: buildPrompt(input) }],
+      }),
+    })
+    if (!res.ok) throw new Error(`OpenAI-compatible API ${res.status}`)
+    const data = await res.json()
+    return parseAgentJson(data.choices?.[0]?.message?.content ?? '')
+  },
+}
+
+export function pickProvider(p: ProviderSettings): AgentProvider {
+  if (p.kind === 'anthropic' && p.apiKey) return anthropicProvider
+  if (p.kind === 'openai' && p.apiKey) return openaiProvider
+  return simulatedProvider
 }

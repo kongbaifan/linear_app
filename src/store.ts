@@ -41,14 +41,28 @@ export interface AgentTask {
   finishedAt?: number
 }
 
-export interface AgentSettings {
+export type ProviderKind = 'simulated' | 'anthropic' | 'openai'
+
+export interface ProviderSettings {
+  kind: ProviderKind
+  baseUrl: string
   apiKey: string
   model: string
+}
+
+export interface AgentSettings {
+  provider: ProviderSettings
   githubToken: string
   githubRepo: string
 }
 
 export const DEFAULT_AGENT_MODEL = 'claude-sonnet-4-5'
+
+export const PROVIDER_DEFAULTS: Record<ProviderKind, { baseUrl: string; model: string }> = {
+  simulated: { baseUrl: '', model: '' },
+  anthropic: { baseUrl: 'https://api.anthropic.com', model: DEFAULT_AGENT_MODEL },
+  openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+}
 
 export interface AppState {
   issues: Issue[]
@@ -74,7 +88,8 @@ export type Action =
   | { type: 'agentResult'; id: string; summary: string; changes: FileChange[]; baseBranch?: string }
   | { type: 'applyChanges'; id: string }
   | { type: 'githubApplied'; id: string; prUrl: string; branch: string }
-  | { type: 'setSettings'; settings: Partial<AgentSettings> }
+  | { type: 'setSettings'; settings: Partial<Omit<AgentSettings, 'provider'>> }
+  | { type: 'setProvider'; provider: Partial<ProviderSettings> }
   | { type: 'importState'; data: unknown }
   | { type: 'reset' }
 
@@ -87,9 +102,31 @@ function defaultState(): AppState {
     theme: 'dark',
     locale: 'en',
     agentTasks: [],
-    settings: { apiKey: '', model: DEFAULT_AGENT_MODEL, githubToken: '', githubRepo: '' },
+    settings: {
+      provider: { kind: 'simulated', baseUrl: '', apiKey: '', model: '' },
+      githubToken: '',
+      githubRepo: '',
+    },
     codebase: { ...initialCodebase },
   }
+}
+
+function sanitizeProvider(settings: any): ProviderSettings {
+  const p = settings?.provider
+  if (p && ['simulated', 'anthropic', 'openai'].includes(p.kind)) {
+    return {
+      kind: p.kind,
+      baseUrl: typeof p.baseUrl === 'string' ? p.baseUrl : '',
+      apiKey: typeof p.apiKey === 'string' ? p.apiKey : '',
+      model: typeof p.model === 'string' ? p.model : '',
+    }
+  }
+  // Migrate the legacy flat shape { apiKey, model }.
+  const legacyKey = typeof settings?.apiKey === 'string' ? settings.apiKey : ''
+  const legacyModel = typeof settings?.model === 'string' ? settings.model : DEFAULT_AGENT_MODEL
+  return legacyKey
+    ? { kind: 'anthropic', baseUrl: PROVIDER_DEFAULTS.anthropic.baseUrl, apiKey: legacyKey, model: legacyModel }
+    : { kind: 'simulated', baseUrl: '', apiKey: '', model: '' }
 }
 
 /** Coerce arbitrary parsed JSON into a valid AppState (defaults on bad shape). */
@@ -104,8 +141,7 @@ export function sanitizeState(parsed: any): AppState {
     locale: parsed.locale === 'zh' ? 'zh' : 'en',
     agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
     settings: {
-      apiKey: typeof parsed.settings?.apiKey === 'string' ? parsed.settings.apiKey : '',
-      model: typeof parsed.settings?.model === 'string' ? parsed.settings.model : DEFAULT_AGENT_MODEL,
+      provider: sanitizeProvider(parsed.settings),
       githubToken: typeof parsed.settings?.githubToken === 'string' ? parsed.settings.githubToken : '',
       githubRepo: typeof parsed.settings?.githubRepo === 'string' ? parsed.settings.githubRepo : '',
     },
@@ -246,6 +282,14 @@ export function reducer(state: AppState, action: Action): AppState {
     }
     case 'setSettings':
       return { ...state, settings: { ...state.settings, ...action.settings } }
+    case 'setProvider':
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          provider: { ...state.settings.provider, ...action.provider },
+        },
+      }
     case 'importState':
       return sanitizeState(action.data)
     case 'reset':

@@ -19568,7 +19568,14 @@ var en = {
   "task.viewPr": "View pull request",
   "settings.title": "Settings",
   "settings.aiSection": "AI provider",
-  "settings.aiDesc": "The agent uses Claude via your own Anthropic API key. Without a key it runs in deterministic simulation mode.",
+  "settings.aiDesc": "Choose who powers the agent: Anthropic (Claude, custom base URL supported) or any OpenAI-compatible endpoint — OpenAI, DeepSeek, Kimi, GLM, Qwen, or a relay station. Keys stay in your browser.",
+  "provider.kind": "Provider",
+  "provider.simulated": "Built-in simulator",
+  "provider.anthropic": "Anthropic (Claude)",
+  "provider.openai": "OpenAI-compatible",
+  "provider.baseUrl": "API Base URL",
+  "provider.anthropicHint": "Default is the official API. Point it at a Claude-compatible relay if you use one.",
+  "provider.openaiHint": "Any /chat/completions endpoint works: OpenAI, DeepSeek, Kimi, GLM, Qwen, one-api / new-api relay stations. Note: the official OpenAI API blocks browser calls (CORS) — relays usually allow them.",
   "settings.appearance": "Appearance",
   "settings.theme": "Theme",
   "settings.dark": "Dark",
@@ -19697,7 +19704,14 @@ var zh = {
   "task.viewPr": "查看 Pull Request",
   "settings.title": "设置",
   "settings.aiSection": "AI 提供方",
-  "settings.aiDesc": "Agent 通过你自己的 Anthropic API key 调用 Claude。未填写时使用内置的确定性模拟引擎。",
+  "settings.aiDesc": "选择驱动 Agent 的服务:Anthropic(Claude,支持自定义 Base URL)或任意 OpenAI 兼容端点——OpenAI、DeepSeek、Kimi、GLM、Qwen 或中转站。密钥仅保存在你的浏览器。",
+  "provider.kind": "提供方",
+  "provider.simulated": "内置模拟",
+  "provider.anthropic": "Anthropic (Claude)",
+  "provider.openai": "OpenAI 兼容",
+  "provider.baseUrl": "API Base URL",
+  "provider.anthropicHint": "默认为官方 API,使用 Claude 中转时改成中转地址即可。",
+  "provider.openaiHint": "任何 /chat/completions 端点都可用:OpenAI、DeepSeek、Kimi、GLM、Qwen、one-api / new-api 中转站。注意:OpenAI 官方 API 禁止浏览器直连(CORS),中转站通常允许。",
   "settings.appearance": "外观",
   "settings.theme": "主题",
   "settings.dark": "深色",
@@ -24037,6 +24051,11 @@ final class AppBoot {
 
 // src/store.ts
 var DEFAULT_AGENT_MODEL = "claude-sonnet-4-5";
+var PROVIDER_DEFAULTS = {
+  simulated: { baseUrl: "", model: "" },
+  anthropic: { baseUrl: "https://api.anthropic.com", model: DEFAULT_AGENT_MODEL },
+  openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" }
+};
 var STORAGE_KEY = "linear-clone-state-v1";
 function defaultState() {
   return {
@@ -24045,9 +24064,27 @@ function defaultState() {
     theme: "dark",
     locale: "en",
     agentTasks: [],
-    settings: { apiKey: "", model: DEFAULT_AGENT_MODEL, githubToken: "", githubRepo: "" },
+    settings: {
+      provider: { kind: "simulated", baseUrl: "", apiKey: "", model: "" },
+      githubToken: "",
+      githubRepo: ""
+    },
     codebase: { ...initialCodebase }
   };
+}
+function sanitizeProvider(settings) {
+  const p = settings?.provider;
+  if (p && ["simulated", "anthropic", "openai"].includes(p.kind)) {
+    return {
+      kind: p.kind,
+      baseUrl: typeof p.baseUrl === "string" ? p.baseUrl : "",
+      apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
+      model: typeof p.model === "string" ? p.model : ""
+    };
+  }
+  const legacyKey = typeof settings?.apiKey === "string" ? settings.apiKey : "";
+  const legacyModel = typeof settings?.model === "string" ? settings.model : DEFAULT_AGENT_MODEL;
+  return legacyKey ? { kind: "anthropic", baseUrl: PROVIDER_DEFAULTS.anthropic.baseUrl, apiKey: legacyKey, model: legacyModel } : { kind: "simulated", baseUrl: "", apiKey: "", model: "" };
 }
 function sanitizeState(parsed) {
   if (!parsed || !Array.isArray(parsed.issues) || !Array.isArray(parsed.notifications)) {
@@ -24060,8 +24097,7 @@ function sanitizeState(parsed) {
     locale: parsed.locale === "zh" ? "zh" : "en",
     agentTasks: Array.isArray(parsed.agentTasks) ? parsed.agentTasks : [],
     settings: {
-      apiKey: typeof parsed.settings?.apiKey === "string" ? parsed.settings.apiKey : "",
-      model: typeof parsed.settings?.model === "string" ? parsed.settings.model : DEFAULT_AGENT_MODEL,
+      provider: sanitizeProvider(parsed.settings),
       githubToken: typeof parsed.settings?.githubToken === "string" ? parsed.settings.githubToken : "",
       githubRepo: typeof parsed.settings?.githubRepo === "string" ? parsed.settings.githubRepo : ""
     },
@@ -24175,6 +24211,14 @@ function reducer(state, action) {
     }
     case "setSettings":
       return { ...state, settings: { ...state.settings, ...action.settings } };
+    case "setProvider":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          provider: { ...state.settings.provider, ...action.provider }
+        }
+      };
     case "importState":
       return sanitizeState(action.data);
     case "reset":
@@ -24198,7 +24242,16 @@ function useAppStore() {
 
 // src/components/SettingsView.tsx
 var jsx_dev_runtime18 = __toESM(require_jsx_dev_runtime(), 1);
-var MODEL_OPTIONS = ["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"];
+var MODEL_HINTS = {
+  simulated: [],
+  anthropic: ["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"],
+  openai: ["gpt-4o-mini", "gpt-4o", "deepseek-chat", "deepseek-reasoner", "kimi-k2", "glm-4.7", "qwen3-coder"]
+};
+var KIND_LABEL = {
+  simulated: "provider.simulated",
+  anthropic: "provider.anthropic",
+  openai: "provider.openai"
+};
 function TestBadge({ state }) {
   const { t } = useI18n();
   if (state.status === "idle")
@@ -24233,11 +24286,13 @@ function TestBadge({ state }) {
     ]
   }, undefined, true, undefined, this);
 }
+var stripSlash = (u) => u.replace(/\/+$/, "");
 function SettingsView({
   settings,
   theme,
   locale,
   onSettings,
+  onProvider,
   onTheme,
   onLocale,
   onExport,
@@ -24246,28 +24301,57 @@ function SettingsView({
   storageBytes
 }) {
   const { t } = useI18n();
+  const provider = settings.provider;
   const fileRef = import_react12.useRef(null);
   const [aiTest, setAiTest] = import_react12.useState({ status: "idle" });
   const [ghTest, setGhTest] = import_react12.useState({ status: "idle" });
-  const testAnthropic = async () => {
+  const switchKind = (kind) => {
+    if (kind === provider.kind)
+      return;
+    const prevDefaults = PROVIDER_DEFAULTS[provider.kind];
+    const nextDefaults = PROVIDER_DEFAULTS[kind];
+    onProvider({
+      kind,
+      baseUrl: !provider.baseUrl || provider.baseUrl === prevDefaults.baseUrl ? nextDefaults.baseUrl : provider.baseUrl,
+      model: MODEL_HINTS[kind].includes(provider.model) ? provider.model : nextDefaults.model
+    });
+    setAiTest({ status: "idle" });
+  };
+  const testProvider = async () => {
     setAiTest({ status: "testing" });
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": settings.apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-          model: settings.model || DEFAULT_AGENT_MODEL,
-          max_tokens: 1,
-          messages: [{ role: "user", content: "ping" }]
-        })
-      });
+      let res;
+      if (provider.kind === "anthropic") {
+        res = await fetch(`${stripSlash(provider.baseUrl || PROVIDER_DEFAULTS.anthropic.baseUrl)}/v1/messages`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": provider.apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            max_tokens: 1,
+            messages: [{ role: "user", content: "ping" }]
+          })
+        });
+      } else {
+        res = await fetch(`${stripSlash(provider.baseUrl || PROVIDER_DEFAULTS.openai.baseUrl)}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${provider.apiKey}`
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            max_tokens: 1,
+            messages: [{ role: "user", content: "ping" }]
+          })
+        });
+      }
       if (res.ok)
-        setAiTest({ status: "ok" });
+        setAiTest({ status: "ok", message: `${provider.model} · ${t("settings.testOk")}` });
       else
         setAiTest({ status: "fail", message: `HTTP ${res.status}` });
     } catch (e) {
@@ -24321,49 +24405,80 @@ function SettingsView({
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
                 className: "settings-label",
-                children: t("agents.apiKey")
+                children: t("provider.kind")
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-                className: "settings-row",
+                className: "tab-group",
+                style: { display: "inline-flex" },
+                children: ["simulated", "anthropic", "openai"].map((kind) => /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                  className: `tab${provider.kind === kind ? " active" : ""}`,
+                  onClick: () => switchKind(kind),
+                  children: t(KIND_LABEL[kind])
+                }, kind, false, undefined, this))
+              }, undefined, false, undefined, this),
+              provider.kind !== "simulated" && /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(jsx_dev_runtime18.Fragment, {
                 children: [
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                    className: "settings-label",
+                    children: t("provider.baseUrl")
+                  }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
                     className: "settings-input",
-                    type: "password",
-                    placeholder: "sk-ant-…",
-                    value: settings.apiKey,
-                    onChange: (e) => onSettings({ apiKey: e.target.value.trim() })
+                    placeholder: PROVIDER_DEFAULTS[provider.kind].baseUrl,
+                    value: provider.baseUrl,
+                    onChange: (e) => onProvider({ baseUrl: e.target.value.trim() })
                   }, undefined, false, undefined, this),
-                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
-                    className: "btn sm",
-                    onClick: testAnthropic,
-                    disabled: !settings.apiKey,
-                    children: t("settings.test")
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                    className: "settings-hint",
+                    children: provider.kind === "openai" ? t("provider.openaiHint") : t("provider.anthropicHint")
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                    className: "settings-label",
+                    children: "API key"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                    className: "settings-row",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                        className: "settings-input",
+                        type: "password",
+                        placeholder: provider.kind === "anthropic" ? "sk-ant-…" : "sk-…",
+                        value: provider.apiKey,
+                        onChange: (e) => onProvider({ apiKey: e.target.value.trim() })
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("button", {
+                        className: "btn sm",
+                        onClick: testProvider,
+                        disabled: !provider.apiKey,
+                        children: t("settings.test")
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(TestBadge, {
+                    state: aiTest
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
+                    className: "settings-label",
+                    children: t("agents.model")
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
+                    className: "settings-input",
+                    list: "model-options",
+                    value: provider.model,
+                    onChange: (e) => onProvider({ model: e.target.value.trim() })
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("datalist", {
+                    id: "model-options",
+                    children: MODEL_HINTS[provider.kind].map((m) => /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("option", {
+                      value: m
+                    }, m, false, undefined, this))
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
+                    className: "settings-hint",
+                    children: t("agents.apiKeyHint")
                   }, undefined, false, undefined, this)
                 ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(TestBadge, {
-                state: aiTest
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("label", {
-                className: "settings-label",
-                children: t("agents.model")
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("input", {
-                className: "settings-input",
-                list: "model-options",
-                value: settings.model,
-                onChange: (e) => onSettings({ model: e.target.value.trim() || DEFAULT_AGENT_MODEL })
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("datalist", {
-                id: "model-options",
-                children: MODEL_OPTIONS.map((m) => /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("option", {
-                  value: m
-                }, m, false, undefined, this))
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("div", {
-                className: "settings-hint",
-                children: t("agents.apiKeyHint")
-              }, undefined, false, undefined, this)
+              }, undefined, true, undefined, this)
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime18.jsxDEV("section", {
@@ -24568,6 +24683,36 @@ function SettingsView({
 var import_react13 = __toESM(require_react(), 1);
 
 // src/agent/provider.ts
+function buildPrompt(input) {
+  const files = Object.entries(input.codebase).map(([path, content]) => `--- ${path} ---
+${content}`).join(`
+
+`);
+  return `You are a coding agent. Issue ${input.issueId}: "${input.title}".
+
+Here is the codebase:
+
+${files}
+
+Make a focused change that addresses the issue. Respond with ONLY a JSON object:
+{
+  "steps": [4-6 short past-tense work-log lines],
+  "summary": "1-2 sentence result summary",
+  "edits": [{"path": "<exact file path>", "find": "<exact text copied verbatim from the file>", "replace": "<replacement text>"}]
+}
+Rules: "find" must be an EXACT substring of the file at "path" (copy it character-for-character, including indentation). Keep edits minimal. 1-3 edits max.`;
+}
+function parseAgentJson(text) {
+  const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+  if (!Array.isArray(parsed.steps) || typeof parsed.summary !== "string" || !Array.isArray(parsed.edits)) {
+    throw new Error("bad response shape");
+  }
+  const edits = parsed.edits.filter((e) => e && typeof e.path === "string" && typeof e.find === "string").map((e) => ({ path: e.path, find: e.find, replace: String(e.replace ?? "") }));
+  if (edits.length === 0)
+    throw new Error("no valid edits");
+  return { steps: parsed.steps.map(String), summary: parsed.summary, edits };
+}
+var stripSlash2 = (u) => u.replace(/\/+$/, "");
 var playbooks = [
   {
     match: /launch|startup|perf/i,
@@ -24679,66 +24824,65 @@ var simulatedProvider = {
         `Scanned ${paths.length} files for relevant code`,
         `Selected ${path} as the entry point`,
         "Drafted a marker change for review",
-        "No API key configured — running in simulation mode"
+        "No AI provider configured — running in simulation mode"
       ],
-      summary: `Simulation mode: proposed a marker edit in ${path}. Add an Anthropic API key in Agent settings to let Claude produce a real change.`,
+      summary: `Simulation mode: proposed a marker edit in ${path}. Configure an AI provider in Settings to get real changes.`,
       edits: [{ path, find: firstLine, replace: firstLine + marker }]
     };
   }
 };
+var DEFAULT_ANTHROPIC_BASE = "https://api.anthropic.com";
 var anthropicProvider = {
   async run(input) {
-    const files = Object.entries(input.codebase).map(([path, content]) => `--- ${path} ---
-${content}`).join(`
-
-`);
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const base = stripSlash2(input.provider.baseUrl || DEFAULT_ANTHROPIC_BASE);
+    const res = await fetch(`${base}/v1/messages`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": input.apiKey ?? "",
+        "x-api-key": input.provider.apiKey,
         "anthropic-version": "2023-06-01",
         "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
-        model: input.model,
-        max_tokens: 2048,
-        messages: [
-          {
-            role: "user",
-            content: `You are a coding agent. Issue ${input.issueId}: "${input.title}".
-
-Here is the codebase:
-
-${files}
-
-Make a focused change that addresses the issue. Respond with ONLY a JSON object:
-{
-  "steps": [4-6 short past-tense work-log lines],
-  "summary": "1-2 sentence result summary",
-  "edits": [{"path": "<exact file path>", "find": "<exact text copied verbatim from the file>", "replace": "<replacement text>"}]
-}
-Rules: "find" must be an EXACT substring of the file at "path" (copy it character-for-character, including indentation). Keep edits minimal. 1-3 edits max.`
-          }
-        ]
+        model: input.provider.model,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: buildPrompt(input) }]
       })
     });
     if (!res.ok)
-      throw new Error(`API ${res.status}`);
+      throw new Error(`Anthropic API ${res.status}`);
     const data = await res.json();
-    const text = data.content?.[0]?.text ?? "";
-    const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-    if (!Array.isArray(parsed.steps) || typeof parsed.summary !== "string" || !Array.isArray(parsed.edits)) {
-      throw new Error("bad response shape");
-    }
-    const edits = parsed.edits.filter((e) => e && typeof e.path === "string" && typeof e.find === "string").map((e) => ({ path: e.path, find: e.find, replace: String(e.replace ?? "") }));
-    if (edits.length === 0)
-      throw new Error("no valid edits");
-    return { steps: parsed.steps.map(String), summary: parsed.summary, edits };
+    return parseAgentJson(data.content?.[0]?.text ?? "");
   }
 };
-function pickProvider(apiKey) {
-  return apiKey ? anthropicProvider : simulatedProvider;
+var DEFAULT_OPENAI_BASE = "https://api.openai.com/v1";
+var openaiProvider = {
+  async run(input) {
+    const base = stripSlash2(input.provider.baseUrl || DEFAULT_OPENAI_BASE);
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${input.provider.apiKey}`
+      },
+      body: JSON.stringify({
+        model: input.provider.model,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: buildPrompt(input) }]
+      })
+    });
+    if (!res.ok)
+      throw new Error(`OpenAI-compatible API ${res.status}`);
+    const data = await res.json();
+    return parseAgentJson(data.choices?.[0]?.message?.content ?? "");
+  }
+};
+function pickProvider(p) {
+  if (p.kind === "anthropic" && p.apiKey)
+    return anthropicProvider;
+  if (p.kind === "openai" && p.apiKey)
+    return openaiProvider;
+  return simulatedProvider;
 }
 
 // src/agent/github.ts
@@ -24904,15 +25048,20 @@ function useAgentEngine(state, dispatch) {
         const input = {
           issueId: task.issueId,
           title: task.title,
-          model: state.settings.model,
-          apiKey: state.settings.apiKey || undefined,
+          provider: state.settings.provider,
           codebase
         };
         let result;
         try {
-          result = await pickProvider(state.settings.apiKey || undefined).run(input);
-        } catch {
+          result = await pickProvider(state.settings.provider).run(input);
+        } catch (e) {
+          const reason = e instanceof Error ? e.message : String(e);
           result = await simulatedProvider.run(input);
+          result = {
+            ...result,
+            steps: [`⚠ ${state.settings.provider.kind} provider failed (${reason}) — fell back to simulation`, ...result.steps],
+            summary: `[Simulated fallback — ${state.settings.provider.kind} call failed: ${reason}] ${result.summary}`
+          };
         }
         for (const step of result.steps) {
           await new Promise((r) => setTimeout(r, STEP_DELAY_MS));
@@ -25067,7 +25216,7 @@ function App() {
         issueId: issue.id,
         title: issue.title,
         status: "queued",
-        model: state.settings.model,
+        model: state.settings.provider.kind === "simulated" ? "simulated" : state.settings.provider.model,
         steps: [],
         target: githubMode ? "github" : "virtual",
         repo: githubMode ? state.settings.githubRepo : undefined,
@@ -25151,6 +25300,7 @@ function App() {
               theme: state.theme,
               locale: state.locale,
               onSettings: (patch) => dispatch({ type: "setSettings", settings: patch }),
+              onProvider: (patch) => dispatch({ type: "setProvider", provider: patch }),
               onTheme: (th) => dispatch({ type: "setTheme", theme: th }),
               onLocale: (lo) => dispatch({ type: "setLocale", locale: lo }),
               onExport: () => {
